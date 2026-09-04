@@ -99,7 +99,6 @@ export interface SkyRow {
   sky: Record<CityId, string>;
   sun: { x: number; y: number; color: string; glow: string; opacity: number };
   moon: { x: number; y: number; opacity: number };
-  dot: Record<CityId, { color: string; glow: string }>;
   starOpacity: number;
   /** True when the brighter city is in daylight — flips the text to dark ink. */
   isDay: boolean;
@@ -163,11 +162,6 @@ export function buildDay(dayStart: number): SkyDay {
     const sunPos = place(midAlt, mid.azimuth);
     const moonPos = place(moonAlt, moon.azimuth);
 
-    const dotFor = (alt: number) =>
-      alt >= 0
-        ? { color: '#FFE9A8', glow: '0 0 9px 2px rgba(255,233,168,0.55)' }
-        : { color: '#6E6A84', glow: 'none' };
-
     rows.push({
       ms,
       alt: { hamburg: hhAlt, kaliningrad: kdAlt },
@@ -185,7 +179,6 @@ export function buildDay(dayStart: number): SkyDay {
         y: moonPos.y,
         opacity: moonAlt > 0 && bright < 8 ? Math.min(0.9, Math.max(0, (8 - bright) / 14)) : 0,
       },
-      dot: { hamburg: dotFor(hhAlt), kaliningrad: dotFor(kdAlt) },
       starOpacity: Math.min(1, Math.max(0, (-4 - bright) / 10)),
       isDay,
       text: isDay

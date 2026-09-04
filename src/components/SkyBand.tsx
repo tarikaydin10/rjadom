@@ -115,7 +115,15 @@ export function SkyBand({ row, ms, leftCity, rightCity, weather, onScrubTo, onSc
       </div>
 
       {/* Only the arc and the horizon are stretched; every body is an HTML circle,
-          because preserveAspectRatio="none" would squash an SVG circle into an ellipse. */}
+          because preserveAspectRatio="none" would squash an SVG circle into an ellipse.
+
+          There are deliberately no city markers on this line. They would encode
+          one bit — sun up or down — that the two sky gradients, the status line
+          and the note lines already carry, and the two cities share that bit for
+          all but about 85 minutes a day. Worse, the horizontal axis here means
+          solar azimuth (east enters on the left), while a city marker would read
+          as a map (west on the left) — the same axis pointing two ways is what
+          made the markers look arbitrary. */}
       <svg className="sky__arc" width="100%" height="232" viewBox="0 0 356 232" fill="none" preserveAspectRatio="none">
         <path d="M-4 186C46 86 310 86 360 186" stroke={row.text.arc} strokeWidth="1" strokeDasharray="3 5" />
         <line x1="0" y1="186" x2="356" y2="186" stroke={row.text.horizon} strokeWidth="1" />
@@ -132,9 +140,6 @@ export function SkyBand({ row, ms, leftCity, rightCity, weather, onScrubTo, onSc
           boxShadow: `0 0 26px 8px ${row.sun.glow}`,
         }}
       />
-
-      <span className="sky__dot" style={{ left: '25%', background: row.dot[leftCity].color, boxShadow: row.dot[leftCity].glow }} />
-      <span className="sky__dot" style={{ left: '75%', background: row.dot[rightCity].color, boxShadow: row.dot[rightCity].glow }} />
 
       <div className="sky__scrim" />
 

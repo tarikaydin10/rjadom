@@ -108,8 +108,7 @@ body {
 }
 
 .sky__moon,
-.sky__sun,
-.sky__dot {
+.sky__sun {
   position: absolute;
   border-radius: 50%;
 }
@@ -126,13 +125,6 @@ body {
   width: 20px;
   height: 20px;
   margin: -10px 0 0 -10px;
-}
-
-.sky__dot {
-  width: 7px;
-  height: 7px;
-  margin: -3.5px 0 0 -3.5px;
-  top: 186px;
 }
 
 .sky__scrim {
