@@ -88,7 +88,8 @@ chown -R 1000:1000 /var/lib/rjadom && chmod 750 /var/lib/rjadom
 
 node -e "console.log('PAIR_SECRET=' + require('crypto').randomBytes(24).toString('base64url'))" \
   > /etc/rjadom.env
-chmod 644 /etc/rjadom.env    # der Container liest sie als UID 1000
+# Nur der Container-Benutzer und root dürfen sie lesen — nicht alle Welt.
+chown 1000:1000 /etc/rjadom.env && chmod 600 /etc/rjadom.env
 cat /etc/rjadom.env
 ```
 
