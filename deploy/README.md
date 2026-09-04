@@ -231,12 +231,19 @@ Danach melden sich beide Telefone einmal neu an: unter „Мы / Us" auf „Dies
 Gerät vergessen", dann das neue Passwort. **Eure Antworten bleiben erhalten** —
 sie hängen nicht am Passwort.
 
+Falsche Versuche werden zunehmend langsamer beantwortet, global gezählt: die
+ersten beiden sofort (das ist ein Tippfehler), danach wächst die Verzögerung bis
+auf eine Minute. Ein Angreifer kommt damit auf rund 1.440 Versuche am Tag statt
+Millionen; euch kostet es nichts, weil ihr pro Gerät einmal entsperrt. Aussperren
+kann euch damit niemand — es bremst, es blockiert nicht.
+
 Zwei Dinge, die der Server erzwingt bzw. erlaubt:
 
-* **Mindestens 16 Zeichen.** Darunter startet er gar nicht erst, mit genau dieser
-  Meldung. Die Adresse der App ist nicht geheim — in den Logs stehen Bots, die
-  jede Domain abklappern — und Ratenbegrenzung kauft gegen ein kurzes
-  Wörterbuchwort nur Zeit, keine Sicherheit.
+* **Kürzer als 16 Zeichen ist erlaubt, wird aber beim Start angemahnt.** Wie viel
+  Passwort genug ist, entscheidet ihr — ihr wisst, wer bei euch vorbeischauen
+  könnte. Nur ehrlich dazu: die Adresse der App ist nicht geheim, in den Logs
+  stehen Bots, die jede Domain abklappern, und die Bremse unten kauft gegen ein
+  kurzes Wörterbuchwort Zeit, keine Sicherheit.
 * **Beliebige Zeichen**, auch Kyrillisch oder Emoji. Der Client kodiert das
   Passwort, bevor es in den HTTP-Header geht: Header dürfen nur Latin-1
   enthalten, ein russisches Passwort würde sonst schon im Browser scheitern.

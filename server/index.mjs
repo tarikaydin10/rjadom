@@ -37,9 +37,21 @@ const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? '';
 // VITE_WEATHER_BASE_URL if you point the app at your own Open-Meteo instance.
 const WEATHER_ORIGIN = process.env.WEATHER_ORIGIN ?? 'https://api.open-meteo.com';
 
-if (!SECRET || SECRET.length < 16) {
-  console.error('PAIR_SECRET must be set and at least 16 characters. Refusing to start.');
+if (!SECRET) {
+  console.error('PAIR_SECRET must be set. Refusing to start.');
   process.exit(1);
+}
+
+// A warning, not a refusal. How much passphrase is enough is the owners' call —
+// they know who might come looking — and a server that will not start is a worse
+// outcome than a short passphrase they chose on purpose. Said once, at startup,
+// so the trade-off is on the record rather than forgotten.
+if (SECRET.length < 16) {
+  console.warn(
+    `PAIR_SECRET is ${SECRET.length} characters. Short passphrases are guessable: ` +
+      'the address of this app is not secret, and rate limiting buys time rather than safety. ' +
+      'Sixteen or more, ideally several words, if you want the lock to carry the weight.',
+  );
 }
 
 const MEMBERS = new Set(['a', 'b']);
@@ -119,7 +131,10 @@ function throttled(ip) {
 let globalFailures = 0;
 let globalWindowStart = Date.now();
 const GLOBAL_WINDOW_MS = 60 * 60 * 1000;
-const MAX_DELAY_MS = 15000;
+// Generous, because a short passphrase is allowed and this is what stands
+// between one and a word list. It costs the two real users nothing: they unlock
+// once per device, and the first couple of failures still answer instantly.
+const MAX_DELAY_MS = 60000;
 
 function failureDelayMs() {
   if (Date.now() - globalWindowStart > GLOBAL_WINDOW_MS) {
