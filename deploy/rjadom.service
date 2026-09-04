@@ -1,4 +1,9 @@
 # /etc/systemd/system/rjadom.service
+#
+# The alternative to the container setup in deploy/rjadom/: use this when Rjadom
+# is the only thing on the machine and Caddy can own :80 and :443 directly.
+# Both shapes read the same /srv/rjadom/app layout, so the deploy workflow is
+# identical apart from the restart command (see RESTART_COMMAND).
 [Unit]
 Description=Rjadom
 Documentation=https://github.com/tarikaydin10/rjadom
@@ -10,14 +15,14 @@ Type=simple
 User=rjadom
 Group=rjadom
 WorkingDirectory=/srv/rjadom
-ExecStart=/usr/bin/node /srv/rjadom/server/index.mjs
+ExecStart=/usr/bin/node /srv/rjadom/app/server/index.mjs
 Restart=on-failure
 RestartSec=2
 
 Environment=NODE_ENV=production
 Environment=PORT=8787
 Environment=HOST=127.0.0.1
-Environment=STATIC_DIR=/srv/rjadom/dist
+Environment=STATIC_DIR=/srv/rjadom/app/dist
 # Outside the deploy directory, so a deploy can never delete your answers.
 Environment=DATA_DIR=/var/lib/rjadom
 # Holds PAIR_SECRET=... — root-owned, chmod 600. Never in the repository.

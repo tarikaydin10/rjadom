@@ -1,0 +1,51 @@
+# Rjadom as its own project: own directory, own data, own lifecycle.
+#
+# No image is built and nothing is pulled from a registry beyond the official
+# Node base image. The server has no dependencies at all, so the code is simply
+# mounted read-only and run — which keeps the property that a broken package
+# registry can never take the running app down.
+#
+#   cd /srv/rjadom && docker compose up -d
+name: rjadom
+
+services:
+  app:
+    image: node:22-alpine
+    container_name: rjadom
+    restart: unless-stopped
+    command: node /app/server/index.mjs
+    working_dir: /app
+    # Not root. The process reads one directory and writes one directory.
+    user: "1000:1000"
+    environment:
+      # Inside a container this must be 0.0.0.0 — loopback here would mean
+      # "reachable by nobody", including the proxy. Only the edge network can
+      # see it; no port is published to the host.
+      HOST: "0.0.0.0"
+      PORT: "8787"
+      STATIC_DIR: /app/dist
+      DATA_DIR: /data
+      NODE_ENV: production
+    # Holds PAIR_SECRET=... — root-owned, chmod 600, never in the repository.
+    env_file:
+      - /etc/rjadom.env
+    volumes:
+      # What the deploy writes: the built app and the one server file.
+      - /srv/rjadom/app:/app:ro
+      # What must survive every deploy: your answers.
+      - /var/lib/rjadom:/data
+    networks:
+      - edge
+    healthcheck:
+      # No credentials, so the expected answer is 401 — which proves both that
+      # the server is up and that the lock is on.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/api/session').then(r=>process.exit(r.status===401?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  edge:
+    external: true
+    name: edge

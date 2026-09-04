@@ -1,0 +1,11 @@
+# /srv/edge/Caddyfile
+#
+# Deliberately almost empty. Every site lives in its own file under conf.d/, so
+# adding or removing an application never means editing this one.
+
+{
+	# Let's Encrypt uses this to warn you before a certificate expires.
+	email you@example.com
+}
+
+import /etc/caddy/conf.d/*.caddy

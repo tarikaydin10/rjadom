@@ -1,0 +1,21 @@
+# Copy to /srv/edge/conf.d/rjadom.caddy and put your own domain in front.
+#
+# `rjadom` resolves to the container by name on the shared edge network, so
+# nothing is published to the host and the app is reachable only through here.
+
+rjadom.example.com {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	reverse_proxy rjadom:8787
+
+	log {
+		# A private page for two people; there is no reason to record when each
+		# of them opened it. Remove this block if you want request logs.
+		output discard
+	}
+}

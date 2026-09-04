@@ -58,17 +58,19 @@ jobs:
           SSH="ssh -p $PORT -i ~/.ssh/id_deploy -o IdentitiesOnly=yes"
           # The built app replaces the old one wholesale; stale hashed assets
           # would otherwise pile up forever.
-          rsync -az --delete -e "$SSH" dist/ "$TARGET:/srv/rjadom/dist/"
+          rsync -az --delete -e "$SSH" dist/ "$TARGET:/srv/rjadom/app/dist/"
           # The server is a single file with no dependencies.
-          rsync -az -e "$SSH" server/index.mjs "$TARGET:/srv/rjadom/server/index.mjs"
+          rsync -az -e "$SSH" server/index.mjs "$TARGET:/srv/rjadom/app/server/index.mjs"
 
       - name: Restart
         env:
           TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
           PORT: ${{ vars.SSH_PORT || '22' }}
+          # Container by default. Set the RESTART_COMMAND variable to
+          # 'sudo /usr/bin/systemctl restart rjadom' for a plain systemd host.
+          RESTART: ${{ vars.RESTART_COMMAND || 'sudo /usr/bin/docker restart rjadom' }}
         run: |
-          ssh -p "$PORT" -i ~/.ssh/id_deploy -o IdentitiesOnly=yes "$TARGET" \
-            'sudo /usr/bin/systemctl restart rjadom'
+          ssh -p "$PORT" -i ~/.ssh/id_deploy -o IdentitiesOnly=yes "$TARGET" "$RESTART"
 
       - name: Health check
         env:

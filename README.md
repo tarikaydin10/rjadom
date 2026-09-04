@@ -193,16 +193,26 @@ Einmal einrichten, danach deployt jeder Push auf `main` automatisch über
 Der Zuschnitt in einem Satz: gebaut wird in der CI, auf den Server gehen nur
 `dist/` und **eine einzige Server-Datei ohne Abhängigkeiten** — zusammen rund
 1 MB, 40 Dateien, kein `node_modules`, kein npm auf dem VPS. Ein Deploy ist
-damit zwei `rsync` und ein `systemctl restart`, und eine kaputte
-Paket-Registry kann die laufende App nie umwerfen, nur eine neue Version
-verhindern.
+damit zwei `rsync` und ein Neustart, und eine kaputte Paket-Registry kann die
+laufende App nie umwerfen, nur eine neue Version verhindern.
+
+Zwei Varianten, beide in `deploy/README.md`:
+
+**A — Rjadom allein auf dem Server.** Caddy auf dem Host, der Node-Prozess als
+systemd-Dienst auf Loopback:
 
 ```
-Caddy (TLS)  →  127.0.0.1:8787  →  node server/index.mjs  →  dist/  +  /api
+Caddy (TLS)  →  127.0.0.1:8787  →  node server/index.mjs  →  dist/ + /api
 ```
 
-Der Node-Prozess bindet ausschließlich auf Loopback; nach außen spricht nur
-Caddy. `DATA_DIR` liegt bewusst außerhalb des Deploy-Verzeichnisses
+**B — mehrere Systeme auf einem Server.** Ein Caddy als gemeinsamer Türsteher,
+dahinter jede Anwendung als eigenes Compose-Projekt. Eine neue Site ist eine
+Datei in `conf.d/` plus ein Reload — kein Image-Rebuild, keine andere Anwendung
+betroffen. Der Grundsatz dahinter: was verlässlich laufen muss, darf nicht von
+dem abhängen, was ständig neu gebaut wird.
+
+Nach außen spricht in beiden Fällen nur Caddy; der Node-Prozess ist nie direkt
+erreichbar. `DATA_DIR` liegt bewusst außerhalb des Deploy-Verzeichnisses
 (`/var/lib/rjadom`), damit ein Deploy eure Antworten nicht anfassen kann. Die
 Passphrase steht nur in `/etc/rjadom.env` auf dem Server — nie im Repository,
 nie im Build, nie in der CI.

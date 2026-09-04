@@ -1,0 +1,40 @@
+# The doorman.
+#
+# One Caddy owns :80 and :443 for the whole machine and knows nothing about the
+# applications behind it — each of those drops a file into conf.d and joins the
+# `edge` network. Adding a site is a file plus a reload; no image is rebuilt and
+# no other application is touched.
+#
+# The point of the arrangement: what has to keep working must not depend on what
+# gets torn down and rebuilt. Rjadom keeps running when a test stack is deleted,
+# and a test stack can be deleted without a thought.
+#
+#   cd /srv/edge && docker compose up -d
+name: edge
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: edge-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - /srv/edge/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/edge/conf.d:/etc/caddy/conf.d:ro
+      # Certificates and account keys. Owned by this project, not borrowed from
+      # an application — see the migration note in deploy/README.md.
+      - edge-data:/data
+      - edge-config:/config
+    networks:
+      - edge
+
+volumes:
+  edge-data:
+  edge-config:
+
+networks:
+  edge:
+    name: edge
