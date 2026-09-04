@@ -96,7 +96,12 @@ jobs:
         env:
           DOMAIN: ${{ vars.DOMAIN }}
         run: |
-          if [ -z "$DOMAIN" ]; then echo "DOMAIN variable not set, skipping"; exit 0; fi
+          # Deliberately fatal. A green run that checked nothing is worse than a
+          # red one: it says "deployed and working" on the strength of an rsync.
+          if [ -z "$DOMAIN" ]; then
+            echo "::error::Repository variable DOMAIN is not set, so this deploy cannot verify itself. Set it to the hostname the app is served on."
+            exit 1
+          fi
           for attempt in 1 2 3 4 5; do
             sleep 3
             shell=$(curl -fsS -o /dev/null -w '%{http_code}' "https://$DOMAIN/" || true)

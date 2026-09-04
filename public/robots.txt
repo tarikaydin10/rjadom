@@ -1,0 +1,9 @@
+# A private page for two people. Nothing here is meant to be found, indexed,
+# summarised or trained on.
+#
+# The pages themselves also carry noindex, and the server sends X-Robots-Tag on
+# every response — this file is the part that well-behaved crawlers ask for
+# first, and without it they were being handed the app shell instead.
+
+User-agent: *
+Disallow: /
