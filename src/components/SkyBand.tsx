@@ -1,22 +1,18 @@
 import { useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { CITIES, type CityId } from '../content/cities';
-import { SLOTS, type SkyRow } from '../sky/engine';
+import { SLOTS, type SkyDay, type SkyRow } from '../sky/engine';
+import { STARS } from '../sky/stars';
+import { MoonDisc } from './MoonDisc';
 import { nextEvent } from '../sky/notes';
 import { conditionKey, observationAt, type WeatherCache } from '../weather/openmeteo';
 import { clock, roundTemp } from '../lib/format';
 import { useI18n } from '../i18n';
 
-const STARS = [
-  { left: '47%', top: 64, size: 3, opacity: 1 },
-  { left: '53%', top: 86, size: 2, opacity: 0.7 },
-  { left: '50%', top: 106, size: 2, opacity: 0.5 },
-  { left: '12%', top: 122, size: 2, opacity: 0.55 },
-  { left: '88%', top: 116, size: 2, opacity: 0.5 },
-];
-
 interface Props {
   row: SkyRow;
+  /** Today's table, for the tracks the sun and moon actually follow. */
+  day: SkyDay;
   /** Both cities keep fixed sides — see BAND_ORDER in `content/cities.ts`. */
   /** The moment being shown — real time, or wherever the drag has landed. */
   ms: number;
@@ -30,7 +26,7 @@ interface Props {
 /** Movement below this is a tap, not a scrub. */
 const DRAG_THRESHOLD_PX = 6;
 
-export function SkyBand({ row, ms, leftCity, rightCity, weather, onScrubTo, onScrubEnd }: Props) {
+export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo, onScrubEnd }: Props) {
   const { t, locale } = useI18n();
   const drag = useRef<{ x: number; slot: number; width: number; engaged: boolean } | null>(null);
 
@@ -110,31 +106,71 @@ export function SkyBand({ row, ms, leftCity, rightCity, weather, onScrubTo, onSc
       <div className="sky__layer sky__layer--east" style={{ background: row.sky[rightCity] }} />
 
       <div className="sky__layer" style={{ opacity: row.starOpacity }}>
-        {STARS.map((star) => (
+        {STARS.map((star, index) => (
           <span
-            key={star.left + star.top}
+            key={index}
             className="sky__star"
-            style={{ left: star.left, top: star.top, width: star.size, height: star.size, opacity: star.opacity }}
+            style={{
+              left: `${star.x}%`,
+              top: star.y,
+              width: star.size,
+              height: star.size,
+              opacity: star.opacity,
+            }}
           />
         ))}
       </div>
 
-      {/* Only the arc and the horizon are stretched; every body is an HTML circle,
-          because preserveAspectRatio="none" would squash an SVG circle into an ellipse.
+      {/* The tracks the sun and moon actually take today, computed from the same
+          positions they are drawn at — so a body sits on its own line by
+          construction. High and wide in summer, low and short in winter, and the
+          moon's track sits apart from the sun's because it genuinely does.
 
-          There are deliberately no city markers on this line. They would encode
-          one bit — sun up or down — that the two sky gradients, the status line
-          and the note lines already carry, and the two cities share that bit for
-          all but about 85 minutes a day. Worse, the horizontal axis here means
-          solar azimuth (east enters on the left), while a city marker would read
-          as a map (west on the left) — the same axis pointing two ways is what
-          made the markers look arbitrary. */}
-      <svg className="sky__arc" width="100%" height="232" viewBox="0 0 356 232" fill="none" preserveAspectRatio="none">
-        <path d="M-4 186C46 86 310 86 360 186" stroke={row.text.arc} strokeWidth="1" strokeDasharray="3 5" />
-        <line x1="0" y1="186" x2="356" y2="186" stroke={row.text.horizon} strokeWidth="1" />
+          The band stretches horizontally, which would thicken strokes unevenly;
+          `vector-effect` keeps them honest. Bodies stay HTML circles — an SVG
+          circle here would come out an ellipse. */}
+      <svg
+        className="sky__arc"
+        viewBox="0 0 100 232"
+        preserveAspectRatio="none"
+        fill="none"
+        aria-hidden="true"
+      >
+        {/* A track is only drawn while its body is actually visible. A line
+            with nothing on it explains nothing — it just looks like a chart. */}
+        {(row.moon.opacity > 0.05 ? day.paths.moon : []).map((segment, index) => (
+          <path
+            key={`m${index}`}
+            d={segment.d}
+            stroke={row.text.arc}
+            strokeOpacity={segment.above ? 0.38 : 0.18}
+            strokeWidth="1"
+            strokeDasharray={segment.above ? undefined : '2 4'}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+        {(row.sun.opacity > 0 ? day.paths.sun : []).map((segment, index) => (
+          <path
+            key={`s${index}`}
+            d={segment.d}
+            stroke={row.text.arc}
+            strokeOpacity={segment.above ? 0.62 : 0.3}
+            strokeWidth="1"
+            strokeDasharray={segment.above ? undefined : '2 4'}
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+        <line x1="0" y1="186" x2="100" y2="186" stroke={row.text.horizon} strokeWidth="1" vectorEffect="non-scaling-stroke" />
       </svg>
 
-      <span className="sky__moon" style={{ left: `${row.moon.x}%`, top: row.moon.y, opacity: row.moon.opacity }} />
+      <MoonDisc
+        size={16}
+        illuminated={row.moon.illuminated}
+        waxing={row.moon.waxing}
+        tilt={limbTilt(row)}
+        opacity={row.moon.opacity}
+        style={{ position: 'absolute', left: `${row.moon.x}%`, top: row.moon.y, margin: '-8px 0 0 -8px' }}
+      />
       <span
         className="sky__sun"
         style={{
@@ -154,6 +190,20 @@ export function SkyBand({ row, ms, leftCity, rightCity, weather, onScrubTo, onSc
       </div>
     </div>
   );
+}
+
+/**
+ * Which way the moon's lit edge points: at the sun, wherever it is drawn.
+ *
+ * Measured in pixels rather than in the band's mixed units — x is a percentage
+ * of the width, y is already pixels — or the angle would be wrong by however
+ * wide the phone is.
+ */
+function limbTilt(row: SkyRow, bandWidth = 393): number {
+  const dx = ((row.sun.x - row.moon.x) / 100) * bandWidth;
+  const dy = row.sun.y - row.moon.y;
+  if (dx === 0 && dy === 0) return 0;
+  return (Math.atan2(dy, dx) * 180) / Math.PI;
 }
 
 function startOfDay(ms: number): number {

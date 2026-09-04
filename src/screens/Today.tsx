@@ -10,7 +10,8 @@ import { BAND_ORDER } from '../content/cities';
 import { SLOTS, SLOT_MS, skyDay, slotOf, startOfLocalDay, statusFor } from '../sky/engine';
 import { dateKey, dayNumber } from '../lib/day';
 import { questionFor } from '../content/questions';
-import { displayName } from '../data/settings';
+import { displayName, sidesFor } from '../data/settings';
+import { getPair } from '../data/pair';
 import { loadDay, saveMyAnswer, type DayAnswers } from '../data/answers';
 import { timeOfDay } from '../lib/format';
 import { subscribeSync } from '../data/sync';
@@ -48,9 +49,12 @@ export function Today() {
   const shownMs = scrubSlot === null ? now : startOfLocalDay(now) + scrubSlot * SLOT_MS;
 
   // Layout is geographic and identical on both devices; only the wording below
-  // depends on which side of the sky the reader is standing on.
-  const yourCity = settings.you.city;
-  const partnerName = displayName(settings.partner.name, locale);
+  // depends on which side of the sky the reader is standing on — and that comes
+  // from the side chosen at unlock, so it cannot drift.
+  const member = getPair()?.member ?? 'a';
+  const sides = sidesFor(member, settings);
+  const yourCity = sides.yours;
+  const partnerName = displayName(sides.partnerName, locale);
 
   const onSave = (text: string) => {
     setSaving(true);
@@ -73,6 +77,7 @@ export function Today() {
     <>
       <SkyBand
         row={row}
+        day={table}
         ms={shownMs}
         leftCity={BAND_ORDER.left}
         rightCity={BAND_ORDER.right}

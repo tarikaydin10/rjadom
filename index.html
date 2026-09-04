@@ -2,7 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Locked like an application, not a page: no pinch zoom, no double-tap zoom,
+         and the keyboard resizes the content instead of shoving the whole view up. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <meta name="theme-color" content="#241F1B" />
     <!-- A private page for two. It should not turn up in a search result. -->
     <meta name="robots" content="noindex, nofollow" />

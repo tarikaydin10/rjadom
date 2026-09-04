@@ -24,7 +24,14 @@ export const SLOTS = 288; // one day in five-minute steps
 export const BAND_HEIGHT = 232;
 const HORIZON = 186;
 const APEX = 112;
-const MAX_ALT = 58;
+/**
+ * The altitude that reaches the top of the band.
+ *
+ * At 54°N the sun peaks near 59° at midsummer and the moon can reach about 64°,
+ * so anything lower clips them — which was invisible while only a dot was drawn
+ * and became a flat lid across the top the moment the track was.
+ */
+const MAX_ALT = 66;
 const DEPTH = 12;
 
 const SKY_STOPS: { a: number; c: [string, string, string] }[] = [
@@ -122,7 +129,15 @@ export interface SkyRow {
   bright: number;
   sky: Record<CityId, string>;
   sun: { x: number; y: number; color: string; glow: string; opacity: number };
-  moon: { x: number; y: number; opacity: number };
+  moon: {
+    x: number;
+    y: number;
+    opacity: number;
+    /** Lit fraction, 0 new to 1 full. */
+    illuminated: number;
+    /** True while the moon is filling up, which decides the side the light is on. */
+    waxing: boolean;
+  };
   starOpacity: number;
   /** True when the brighter city is in daylight — flips the text to dark ink. */
   isDay: boolean;
@@ -141,10 +156,86 @@ export interface SunEvent {
   alwaysDown: boolean;
 }
 
+/**
+ * One stroke of a body's track across the band.
+ *
+ * Split rather than one long line, for two reasons: the part below the horizon
+ * is drawn differently from the part above it, and the horizontal position wraps
+ * when a body passes due north, which would otherwise draw a line straight back
+ * across the sky.
+ */
+export interface SkyPathSegment {
+  d: string;
+  above: boolean;
+}
+
 export interface SkyDay {
   dayStart: number;
   rows: SkyRow[];
   events: Record<CityId, SunEvent>;
+  /**
+   * Where the sun and moon actually go today, in band coordinates.
+   *
+   * The design's arc was a fixed decorative curve that the sun never touched.
+   * This is the real track, computed from the same positions the bodies are
+   * drawn at — so the sun sits on its own path by construction, the arc is high
+   * in summer and shallow in winter, and the moon's differs from the sun's
+   * because it genuinely does.
+   */
+  paths: { sun: SkyPathSegment[]; moon: SkyPathSegment[] };
+}
+
+interface TrackPoint {
+  x: number;
+  y: number;
+  alt: number;
+}
+
+/** Below this the track is not drawn at all: it is deep night, the body is far
+ *  under the ground, and its position has been clamped to the band edge. */
+const TRACK_FLOOR = -12;
+
+function trackSegments(points: TrackPoint[]): SkyPathSegment[] {
+  const segments: SkyPathSegment[] = [];
+  let current: TrackPoint[] = [];
+  let above: boolean | null = null;
+
+  const flush = () => {
+    // A run stuck against a band edge is the clamp, not a path: the body is
+    // somewhere off past due north and its position has nowhere left to go.
+    const pinned =
+      current.length > 1 && current.every((p) => p.x <= 4.01 || p.x >= 95.99);
+    if (current.length > 1 && above !== null && !pinned) {
+      const d = current.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)} ${p.y.toFixed(1)}`).join(' ');
+      segments.push({ d, above });
+    }
+    current = [];
+  };
+
+  for (const point of points) {
+    const visible = point.alt >= TRACK_FLOOR;
+    const isAbove = point.alt >= 0;
+    const previous = current[current.length - 1];
+    // A jump means the body crossed due north and the position wrapped.
+    const wrapped = previous !== undefined && Math.abs(point.x - previous.x) > 40;
+
+    if (!visible || wrapped || (above !== null && isAbove !== above)) {
+      const boundary = current[current.length - 1];
+      flush();
+      // Carry the last point over so the solid and faint parts meet at the horizon.
+      if (visible && !wrapped && boundary) current.push(boundary);
+    }
+
+    if (visible) {
+      above = isAbove;
+      current.push(point);
+    } else {
+      above = null;
+    }
+  }
+  flush();
+
+  return segments;
 }
 
 /** SunCalc reports "no such event today" as null, and flags the polar cases. */
@@ -177,6 +268,8 @@ function brightestAt(ms: number): number {
 /** Build one full day of rows. Called once per date, never inside a render. */
 export function buildDay(dayStart: number): SkyDay {
   const rows: SkyRow[] = [];
+  const sunTrack: TrackPoint[] = [];
+  const moonTrack: TrackPoint[] = [];
   // Seeded from just before midnight so the first slot of the day is not
   // arbitrarily called "rising".
   let previousBright = brightestAt(dayStart - SLOT_MS);
@@ -189,6 +282,7 @@ export function buildDay(dayStart: number): SkyDay {
     const kd = SunCalc.getPosition(at, CITIES.kaliningrad.lat, CITIES.kaliningrad.lon);
     const mid = SunCalc.getPosition(at, MIDPOINT.lat, MIDPOINT.lon);
     const moon = SunCalc.getMoonPosition(at, MIDPOINT.lat, MIDPOINT.lon);
+    const illumination = SunCalc.getMoonIllumination(at);
 
     // SunCalc 2.x reports altitude in degrees already — no conversion.
     const hhAlt = hh.altitude;
@@ -200,6 +294,8 @@ export function buildDay(dayStart: number): SkyDay {
 
     const sunPos = place(midAlt, mid.azimuth);
     const moonPos = place(moonAlt, moon.azimuth);
+    sunTrack.push({ ...sunPos, alt: midAlt });
+    moonTrack.push({ ...moonPos, alt: moonAlt });
 
     // Compare before advancing, or every slot compares against itself.
     const rising = bright >= previousBright;
@@ -221,6 +317,8 @@ export function buildDay(dayStart: number): SkyDay {
         x: moonPos.x,
         y: moonPos.y,
         opacity: moonAlt > 0 && bright < 8 ? Math.min(0.9, Math.max(0, (8 - bright) / 14)) : 0,
+        illuminated: illumination.fraction,
+        waxing: illumination.phase < 0.5,
       },
       starOpacity: Math.min(1, Math.max(0, (-4 - bright) / 10)),
       isDay,
@@ -247,6 +345,7 @@ export function buildDay(dayStart: number): SkyDay {
     dayStart,
     rows,
     events: { hamburg: eventsFor(dayStart, 'hamburg'), kaliningrad: eventsFor(dayStart, 'kaliningrad') },
+    paths: { sun: trackSegments(sunTrack), moon: trackSegments(moonTrack) },
   };
 }
 

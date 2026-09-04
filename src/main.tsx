@@ -27,9 +27,25 @@ function keepFresh(): void {
   // read once at startup: read once, a first visit would latch "uncontrolled"
   // and that page would never reload again.
   let controlled = Boolean(navigator.serviceWorker.controller);
+
+  /**
+   * Never reload out from under someone mid-sentence. An answer being typed has
+   * not been saved yet, and losing it to a background update would be the worst
+   * possible moment for one — so the reload waits until the editor is closed or
+   * empty, and takes the next opportunity.
+   */
+  const reloadWhenIdle = () => {
+    const editor = document.querySelector<HTMLTextAreaElement>('.answer__editor');
+    if (editor && editor.value.trim().length > 0) {
+      window.setTimeout(reloadWhenIdle, 5000);
+      return;
+    }
+    window.location.reload();
+  };
+
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (controlled) {
-      window.location.reload();
+      reloadWhenIdle();
       return;
     }
     controlled = true;
@@ -38,10 +54,16 @@ function keepFresh(): void {
   const check = () => {
     void navigator.serviceWorker.getRegistration().then((registration) => registration?.update());
   };
+
+  // Every occasion that could mean "a new version exists": coming back to the
+  // app, regaining a connection, and a short heartbeat besides. Asking costs one
+  // conditional request for a 7 KB file.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') check();
   });
-  window.setInterval(check, 60 * 60 * 1000);
+  window.addEventListener('online', check);
+  window.setInterval(check, 5 * 60 * 1000);
+  check();
 }
 
 keepFresh();

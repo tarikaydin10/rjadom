@@ -1,6 +1,7 @@
 import { kvGet, kvSet } from './db';
-import type { PairMember } from './pair';
 import type { CityId } from '../content/cities';
+import { otherCity } from '../content/cities';
+import type { PairMember } from './pair';
 import type { Locale } from '../i18n';
 import { dateKey } from '../lib/day';
 
@@ -18,63 +19,82 @@ export interface PersonName {
   cyrillic: string;
 }
 
-export interface Person {
-  name: PersonName;
-  city: CityId;
-}
-
 export interface Settings {
-  you: Person;
-  partner: Person;
+  /** Who lives where. Keyed by city, not by "you" and "them". */
+  names: Record<CityId, PersonName>;
   /** Day 1 of the counter above the question. Null hides the counter. */
   startDate: string | null;
   reunion: { date: string | null; city: CityId };
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  you: { name: { latin: 'Tarik', cyrillic: 'Тарик' }, city: 'hamburg' },
-  partner: { name: { latin: 'Mila', cyrillic: 'Мила' }, city: 'kaliningrad' },
+  names: {
+    hamburg: { latin: 'Tarik', cyrillic: 'Тарик' },
+    kaliningrad: { latin: 'Mila', cyrillic: 'Мила' },
+  },
   startDate: null,
   reunion: { date: null, city: 'hamburg' },
 };
 
+/**
+ * Which side of the sky this device is on.
+ *
+ * Deliberately *not* a setting. It follows from the side chosen at unlock, so it
+ * cannot drift out of step with it — which is exactly what happened when it was
+ * stored: unlocking a second time as the other city left the old side behind,
+ * and the app showed you your own name as your partner's.
+ */
+export const cityOf = (member: PairMember): CityId => (member === 'a' ? 'hamburg' : 'kaliningrad');
+
+export interface Sides {
+  yours: CityId;
+  theirs: CityId;
+  yourName: PersonName;
+  partnerName: PersonName;
+}
+
+export function sidesFor(member: PairMember, settings: Settings): Sides {
+  const yours = cityOf(member);
+  const theirs = otherCity(yours);
+  return { yours, theirs, yourName: settings.names[yours], partnerName: settings.names[theirs] };
+}
+
 const KEY = 'settings';
 
-export async function loadSettings(): Promise<Settings> {
-  const stored = await kvGet<Partial<Settings>>(KEY);
-  if (!stored) return DEFAULT_SETTINGS;
+/** The shape settings had before the side stopped being stored. */
+interface LegacySettings {
+  you?: { name?: Partial<PersonName>; city?: CityId };
+  partner?: { name?: Partial<PersonName>; city?: CityId };
+}
+
+function migrate(stored: Partial<Settings> & LegacySettings): Settings {
+  const names = { ...DEFAULT_SETTINGS.names };
+
+  if (stored.names) {
+    for (const id of ['hamburg', 'kaliningrad'] as CityId[]) {
+      names[id] = { ...names[id], ...stored.names[id] };
+    }
+  } else if (stored.you?.city || stored.partner?.city) {
+    // Old shape: two people with a city each. Names move to the city they had.
+    for (const person of [stored.you, stored.partner]) {
+      if (person?.city && person.name) names[person.city] = { ...names[person.city], ...person.name };
+    }
+  }
+
   return {
-    ...DEFAULT_SETTINGS,
-    ...stored,
-    you: { ...DEFAULT_SETTINGS.you, ...stored.you },
-    partner: { ...DEFAULT_SETTINGS.partner, ...stored.partner },
+    names,
+    startDate: stored.startDate ?? DEFAULT_SETTINGS.startDate,
     reunion: { ...DEFAULT_SETTINGS.reunion, ...stored.reunion },
   };
 }
 
-export async function saveSettings(settings: Settings): Promise<void> {
-  await kvSet(KEY, settings);
+export async function loadSettings(): Promise<Settings> {
+  const stored = await kvGet<Partial<Settings> & LegacySettings>(KEY);
+  return stored ? migrate(stored) : DEFAULT_SETTINGS;
 }
 
-const HAMBURG_SIDE: Person = { name: { latin: 'Tarik', cyrillic: 'Тарик' }, city: 'hamburg' };
-const KALININGRAD_SIDE: Person = { name: { latin: 'Mila', cyrillic: 'Мила' }, city: 'kaliningrad' };
-
-/**
- * Which side of the sky this device is on.
- *
- * The same build runs on both phones, so "you" and "they" cannot be baked in:
- * on Mila's phone Kaliningrad is the left column and Tarik is the partner. The
- * side chosen at unlock decides that. Returns null when settings already exist,
- * so re-unlocking a device never overwrites names the two of them have edited.
- */
-export async function sideDefaults(member: PairMember): Promise<Settings | null> {
-  const stored = await kvGet<Partial<Settings>>(KEY);
-  if (stored) return null;
-  return {
-    ...DEFAULT_SETTINGS,
-    you: member === 'a' ? HAMBURG_SIDE : KALININGRAD_SIDE,
-    partner: member === 'a' ? KALININGRAD_SIDE : HAMBURG_SIDE,
-  };
+export async function saveSettings(settings: Settings): Promise<void> {
+  await kvSet(KEY, settings);
 }
 
 export function displayName(name: PersonName, locale: Locale): string {

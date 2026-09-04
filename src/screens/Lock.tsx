@@ -3,8 +3,6 @@ import { useI18n } from '../i18n';
 import { CITIES } from '../content/cities';
 import { setPair, suggestSecret, type PairMember } from '../data/pair';
 import { verifyPair } from '../data/api';
-import { sideDefaults } from '../data/settings';
-import { useSettings } from '../data/settings-context';
 
 /**
  * Asked once per device, then never again.
@@ -14,7 +12,6 @@ import { useSettings } from '../data/settings-context';
  */
 export function Lock({ onUnlocked }: { onUnlocked(): void }) {
   const { t } = useI18n();
-  const { update } = useSettings();
   const [member, setMember] = useState<PairMember>('a');
   const [secret, setSecret] = useState('');
   const [state, setState] = useState<'idle' | 'checking' | 'wrong' | 'offline'>('idle');
@@ -25,10 +22,8 @@ export function Lock({ onUnlocked }: { onUnlocked(): void }) {
     setState('checking');
     try {
       if (await verifyPair(member, value)) {
+        // The side chosen here *is* which city is yours — nothing else to store.
         setPair({ member, secret: value });
-        // First unlock on this device also decides which city is "yours".
-        const defaults = await sideDefaults(member);
-        if (defaults) await update(defaults);
         onUnlocked();
       } else {
         setState('wrong');

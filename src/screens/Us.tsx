@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useI18n, type LocalePreference } from '../i18n';
 import { useSettings } from '../data/settings-context';
 import { clearPair, getPair } from '../data/pair';
+import { cityOf } from '../data/settings';
 import { syncConfigured } from '../data/api';
 import { syncNow } from '../data/sync';
 import { useSyncStatus } from '../lib/hooks';
@@ -19,6 +20,7 @@ export function Us() {
   const { t, locale, preference, setPreference } = useI18n();
   const { settings, update } = useSettings();
   const sync = useSyncStatus();
+  const pair = getPair();
   const [draft, setDraft] = useState<Settings>(settings);
   const [saved, setSaved] = useState(false);
 
@@ -60,8 +62,6 @@ export function Us() {
     </div>
   );
 
-  const pair = getPair();
-
   return (
     <div className="screen">
       <h1 className="screen__title">{t('settings.title')}</h1>
@@ -83,63 +83,36 @@ export function Us() {
 
       <div className="section">
         <span className="section__title">{t('settings.names')}</span>
-        {/* Two spellings, never a translation: whichever matches the interface
-            language is shown, with the other as fallback. */}
-        <div className="field">
-          <span className="field__label">{t('settings.yourName')}</span>
-          <div className="field__row">
-            <input
-              className="field__input"
-              value={draft.you.name.latin}
-              onChange={(e) => patch({ you: { ...draft.you, name: { ...draft.you.name, latin: e.target.value } } })}
-              placeholder="Tarik"
-              lang="en"
-            />
-            <input
-              className="field__input"
-              value={draft.you.name.cyrillic}
-              onChange={(e) => patch({ you: { ...draft.you, name: { ...draft.you.name, cyrillic: e.target.value } } })}
-              placeholder="Тарик"
-              lang="ru"
-            />
+        {/* Keyed by city, not by "you" and "them": the same settings are read on
+            both phones, and each of you is "you" on your own. */}
+        {(Object.keys(CITIES) as CityId[]).map((id) => (
+          <div className="field" key={id}>
+            <span className="field__label">
+              {CITIES[id].label}
+              {pair && id === cityOf(pair.member) ? ` · ${t('answer.you')}` : ''}
+            </span>
+            <div className="field__row">
+              <input
+                className="field__input"
+                value={draft.names[id].latin}
+                onChange={(e) =>
+                  patch({ names: { ...draft.names, [id]: { ...draft.names[id], latin: e.target.value } } })
+                }
+                placeholder={id === 'hamburg' ? 'Tarik' : 'Mila'}
+                lang="en"
+              />
+              <input
+                className="field__input"
+                value={draft.names[id].cyrillic}
+                onChange={(e) =>
+                  patch({ names: { ...draft.names, [id]: { ...draft.names[id], cyrillic: e.target.value } } })
+                }
+                placeholder={id === 'hamburg' ? 'Тарик' : 'Мила'}
+                lang="ru"
+              />
+            </div>
           </div>
-        </div>
-        <div className="field">
-          <span className="field__label">{t('settings.partnerName')}</span>
-          <div className="field__row">
-            <input
-              className="field__input"
-              value={draft.partner.name.latin}
-              onChange={(e) =>
-                patch({ partner: { ...draft.partner, name: { ...draft.partner.name, latin: e.target.value } } })
-              }
-              placeholder="Mila"
-              lang="en"
-            />
-            <input
-              className="field__input"
-              value={draft.partner.name.cyrillic}
-              onChange={(e) =>
-                patch({ partner: { ...draft.partner, name: { ...draft.partner.name, cyrillic: e.target.value } } })
-              }
-              placeholder="Мила"
-              lang="ru"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="section">
-        <span className="section__title">{t('settings.sides')}</span>
-        <div className="field">
-          <span className="field__label">{t('settings.yourCity')}</span>
-          {cityChoice(draft.you.city, (city) =>
-            patch({
-              you: { ...draft.you, city },
-              partner: { ...draft.partner, city: city === 'hamburg' ? 'kaliningrad' : 'hamburg' },
-            }),
-          )}
-        </div>
+        ))}
       </div>
 
       <div className="section">
