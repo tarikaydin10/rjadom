@@ -6,7 +6,7 @@ import { CountdownCard } from '../components/CountdownCard';
 import { useI18n } from '../i18n';
 import { useNow, useOnline, useSyncStatus, useWeather } from '../lib/hooks';
 import { useSettings } from '../data/settings-context';
-import { otherCity } from '../content/cities';
+import { BAND_ORDER } from '../content/cities';
 import { SLOTS, SLOT_MS, skyDay, slotOf, startOfLocalDay, statusFor } from '../sky/engine';
 import { dateKey, dayNumber } from '../lib/day';
 import { questionFor } from '../content/questions';
@@ -47,8 +47,9 @@ export function Today() {
   const row = table.rows[Math.min(SLOTS - 1, Math.max(0, slot))] ?? table.rows[0]!;
   const shownMs = scrubSlot === null ? now : startOfLocalDay(now) + scrubSlot * SLOT_MS;
 
+  // Layout is geographic and identical on both devices; only the wording below
+  // depends on which side of the sky the reader is standing on.
   const yourCity = settings.you.city;
-  const theirCity = otherCity(yourCity);
   const partnerName = displayName(settings.partner.name, locale);
 
   const onSave = (text: string) => {
@@ -73,8 +74,8 @@ export function Today() {
       <SkyBand
         row={row}
         ms={shownMs}
-        leftCity={yourCity}
-        rightCity={theirCity}
+        leftCity={BAND_ORDER.left}
+        rightCity={BAND_ORDER.right}
         weather={weather}
         onScrubTo={setScrubSlot}
         onScrubEnd={() => undefined}

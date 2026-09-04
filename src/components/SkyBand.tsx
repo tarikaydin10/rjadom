@@ -17,6 +17,7 @@ const STARS = [
 
 interface Props {
   row: SkyRow;
+  /** Both cities keep fixed sides — see BAND_ORDER in `content/cities.ts`. */
   /** The moment being shown — real time, or wherever the drag has landed. */
   ms: number;
   leftCity: CityId;

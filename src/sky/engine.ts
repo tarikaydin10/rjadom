@@ -88,7 +88,14 @@ const sunTone = (alt: number) => (alt > 8 ? '#FFE9A8' : alt > 0 ? '#FFC978' : '#
 const sunHalo = (alt: number) =>
   alt > 8 ? 'rgba(255,233,168,0.45)' : alt > 0 ? 'rgba(255,201,120,0.4)' : 'rgba(232,146,106,0.3)';
 
-export type StatusKey = 'bothNight' | 'bothDay' | 'bothTwilight' | 'partnerFirst' | 'youLast';
+export type StatusKey =
+  | 'bothNight'
+  | 'bothDay'
+  | 'bothTwilight'
+  | 'partnerFirst'
+  | 'youFirst'
+  | 'partnerLast'
+  | 'youLast';
 
 export interface SkyRow {
   ms: number;
@@ -102,6 +109,9 @@ export interface SkyRow {
   starOpacity: number;
   /** True when the brighter city is in daylight — flips the text to dark ink. */
   isDay: boolean;
+  /** Sun climbing rather than falling. Morning and evening need different words
+   *  for the same gap: light "not yet" versus light "no longer". */
+  rising: boolean;
   text: { primary: string; secondary: string; shadow: string; arc: string; horizon: string };
 }
 
@@ -138,9 +148,21 @@ function eventsFor(dayStart: number, cityId: CityId): SunEvent {
   };
 }
 
+/** Highest of the two cities' sun altitudes at an instant. */
+function brightestAt(ms: number): number {
+  const at = new Date(ms);
+  return Math.max(
+    SunCalc.getPosition(at, CITIES.hamburg.lat, CITIES.hamburg.lon).altitude,
+    SunCalc.getPosition(at, CITIES.kaliningrad.lat, CITIES.kaliningrad.lon).altitude,
+  );
+}
+
 /** Build one full day of rows. Called once per date, never inside a render. */
 export function buildDay(dayStart: number): SkyDay {
   const rows: SkyRow[] = [];
+  // Seeded from just before midnight so the first slot of the day is not
+  // arbitrarily called "rising".
+  let previousBright = brightestAt(dayStart - SLOT_MS);
 
   for (let i = 0; i < SLOTS; i++) {
     const ms = dayStart + i * SLOT_MS;
@@ -162,6 +184,10 @@ export function buildDay(dayStart: number): SkyDay {
     const sunPos = place(midAlt, mid.azimuth);
     const moonPos = place(moonAlt, moon.azimuth);
 
+    // Compare before advancing, or every slot compares against itself.
+    const rising = bright >= previousBright;
+    previousBright = bright;
+
     rows.push({
       ms,
       alt: { hamburg: hhAlt, kaliningrad: kdAlt },
@@ -181,6 +207,7 @@ export function buildDay(dayStart: number): SkyDay {
       },
       starOpacity: Math.min(1, Math.max(0, (-4 - bright) / 10)),
       isDay,
+      rising,
       text: isDay
         ? {
             primary: '#1E2029',
@@ -206,7 +233,13 @@ export function buildDay(dayStart: number): SkyDay {
   };
 }
 
-/** Which of the two cities is brighter right now, from the reader's side. */
+/**
+ * How the two skies relate, from the reader's side.
+ *
+ * The gap between the cities reads differently at the two ends of the day: in
+ * the morning one of you does not have light *yet*, in the evening one of you
+ * does not have it *any more*. Same altitudes, opposite words.
+ */
 export function statusFor(row: SkyRow, yourCity: CityId): StatusKey {
   const partnerCity: CityId = yourCity === 'hamburg' ? 'kaliningrad' : 'hamburg';
   const yours = row.alt[yourCity];
@@ -214,7 +247,8 @@ export function statusFor(row: SkyRow, yourCity: CityId): StatusKey {
   if (row.bright < -6) return 'bothNight';
   if (Math.min(yours, theirs) > 6) return 'bothDay';
   if (row.bright < 0) return 'bothTwilight';
-  return yours < theirs ? 'partnerFirst' : 'youLast';
+  if (row.rising) return yours < theirs ? 'partnerFirst' : 'youFirst';
+  return yours < theirs ? 'partnerLast' : 'youLast';
 }
 
 /** Local midnight of the calendar day a timestamp falls in. */

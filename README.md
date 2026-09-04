@@ -65,7 +65,8 @@ beide Schreibungen stehen nebeneinander.
   (`Tarik` / `Тарик`) — angezeigt wird die, die zur aktiven Sprache passt.
 * **Statuszeilen sind geschlechtsneutral** formuliert („Там уже светло, у тебя
   ещё нет"). Dieselbe App läuft auf beiden Telefonen; ein festes „она" wäre auf
-  einem davon immer falsch.
+  einem davon immer falsch. Sie unterscheiden außerdem Morgen von Abend: fehlt
+  Licht, dann „noch nicht" beim Aufgehen und „nicht mehr" beim Untergehen.
 
 ### 3 · Sonne und Mond aus einer Open-Source-Quelle
 
@@ -103,6 +104,13 @@ Die lokale Datenbank ist die Wahrheit, nicht ein Cache des Servers.
   leiten dieselbe Frage aus demselben Datum ab.
 * Der Service Worker cacht die gesamte App-Shell samt Schriften, also startet sie
   auch offline.
+
+**Eine gemeinsame Ausrichtung.** Das Himmelsband steht auf beiden Telefonen
+gleich: Hamburg links, Kaliningrad rechts (`BAND_ORDER` in
+`src/content/cities.ts`). Nicht „deine Stadt zuerst" — ihr redet über diesen
+Screen, also muss „links" für euch beide dasselbe heißen und ein Screenshot ohne
+Kopfspiegelung lesbar sein. Persönlich bleibt nur die Sprache: die Statuszeile
+liest weiter aus, in welcher Stadt du stehst.
 
 **Ein gemeinsamer Tag.** Hamburg und Kaliningrad liegen im Winter eine Stunde
 auseinander. Ein naives lokales Datum hätte die beiden abends auf verschiedene
