@@ -169,17 +169,34 @@ reload --config /etc/caddy/Caddyfile`. Nichts anderes wird angefasst.
 
 Deploy-Schlüssel auf deinem Rechner:
 
+Am einfachsten **auf dem Server** — dort ist das Werkzeug vollständig, und der
+Schlüssel gibt ohnehin nur Zugang zu genau dieser Maschine. Unter Windows
+scheitern `ssh-copy-id` (gibt es nicht) und `ssh-keyscan` (zu alt für das
+KEX-Verfahren neuerer Server) sonst nur:
+
 ```bash
-ssh-keygen -t ed25519 -f ~/.ssh/rjadom_deploy -C "github-actions" -N ""
-ssh-copy-id -i ~/.ssh/rjadom_deploy.pub deploy@DEIN_SERVER
-ssh-keyscan -t ed25519 DEIN_SERVER          # Ausgabe für SSH_KNOWN_HOSTS
+ssh-keygen -t ed25519 -f /tmp/k -C github-actions -N ''
+cat /tmp/k.pub >> /home/deploy/.ssh/authorized_keys
+chown deploy:deploy /home/deploy/.ssh/authorized_keys && chmod 600 /home/deploy/.ssh/authorized_keys
+
+echo "── SSH_PRIVATE_KEY_B64 (eine Zeile) ──"
+base64 -w0 /tmp/k; echo
+echo "── SSH_KNOWN_HOSTS ──"
+echo "DEINE_SERVER_IP $(cut -d' ' -f1,2 /etc/ssh/ssh_host_ed25519_key.pub)"
+
+shred -u /tmp/k /tmp/k.pub
 ```
+
+Den Host-Key direkt aus `/etc/ssh/ssh_host_ed25519_key.pub` zu lesen ist auch
+inhaltlich besser als `ssh-keyscan`: du liest ihn dort, wo er entsteht, statt
+ihn dir übers Netz von jemandem geben zu lassen, der behauptet, der Server zu
+sein.
 
 **Settings → Secrets and variables → Actions**
 
 | Typ | Name | Wert |
 |---|---|---|
-| Secret | `SSH_PRIVATE_KEY` | Inhalt von `~/.ssh/rjadom_deploy` |
+| Secret | `SSH_PRIVATE_KEY_B64` | `base64 -w0 ~/.ssh/rjadom_deploy` — **eine** Zeile, nichts kann verlorengehen |
 | Secret | `SSH_KNOWN_HOSTS` | Ausgabe von `ssh-keyscan` |
 | Secret | `SSH_HOST` | IP oder Hostname |
 | Secret | `SSH_USER` | `deploy` |

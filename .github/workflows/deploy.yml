@@ -39,12 +39,32 @@ jobs:
 
       - name: Configure SSH
         env:
+          # Base64, deliberately. A PEM private key pasted into a secret field is
+          # the single most common way this pipeline breaks: one lost newline or
+          # a stray leading space and OpenSSL rejects the whole thing with
+          # "error in libcrypto", four steps later, inside an rsync failure.
+          # One base64 line has nothing to mangle.
+          SSH_PRIVATE_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          if [ -n "$SSH_PRIVATE_KEY_B64" ]; then
+            printf '%s' "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_deploy
+          elif [ -n "$SSH_PRIVATE_KEY" ]; then
+            printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          else
+            echo "::error::Set SSH_PRIVATE_KEY_B64 (preferred) or SSH_PRIVATE_KEY."
+            exit 1
+          fi
           chmod 600 ~/.ssh/id_deploy
+          # Fail here, saying what to fix, rather than three steps later as an
+          # "error in libcrypto" buried inside an rsync failure.
+          if ! ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null 2>&1; then
+            echo "::error::The private key did not parse. A PEM key pasted into a secret field loses newlines easily — set SSH_PRIVATE_KEY_B64 to the output of: base64 -w0 <keyfile>"
+            exit 1
+          fi
+          echo "Deploy key loaded: $(ssh-keygen -l -f ~/.ssh/id_deploy | awk '{print $2, $4}')"
           # Pinned host key, not trust-on-first-use: a deploy must fail rather
           # than hand the key to whoever answers on that address.
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
