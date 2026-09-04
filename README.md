@@ -241,7 +241,9 @@ schreibt, entscheidet das nur zwischen Handy und Tablet derselben Person.
   Platzhalter statt geratener Screens.
 * Der **Zeit-Regler** aus dem Prototyp ist, wie im Handoff vorgesehen, kein
   Bedienelement mehr: über das Himmelsband wischen fährt durch den Tag, „назад к
-  сейчас / back to now" springt zurück.
+  сейчас / back to now" springt zurück. Die Geste behält die Regler-Konvention —
+  nach rechts ist später, auch wenn die Sonne von rechts nach links wandert. Sie
+  ist eine Zeitsteuerung, keine Fläche, die man verschiebt.
 * Der **Countdown** zeigt „не выбрано", bis unter „Мы" ein Datum gesetzt ist.
   Ebenso der Tageszähler über der Frage.
 * Ein **Ende-zu-Ende-verschlüsselter** Modus wäre der nächste sinnvolle Schritt,

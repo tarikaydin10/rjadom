@@ -55,10 +55,11 @@ export function SkyBand({ row, ms, leftCity, rightCity, weather, onScrubTo, onSc
       state.engaged = true;
       event.currentTarget.setPointerCapture(event.pointerId);
     }
-    // The sky follows the finger. Since the sun travels east to west — right to
-    // left — dragging right pulls the day backwards, which is what "moving the
-    // sky itself" has to mean once the direction of travel is fixed.
-    const slot = Math.round(state.slot - (dx / state.width) * SLOTS);
+    // Right is later, always. This gesture replaces the prototype's time slider,
+    // so it keeps a slider's convention rather than behaving like a surface being
+    // pushed — dragging forward moves the day forward, whichever way the sun
+    // happens to travel across the band.
+    const slot = Math.round(state.slot + (dx / state.width) * SLOTS);
     onScrubTo(Math.min(SLOTS - 1, Math.max(0, slot)));
   };
 
