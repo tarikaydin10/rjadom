@@ -201,9 +201,18 @@ sein.
 | Secret | `SSH_HOST` | IP oder Hostname |
 | Secret | `SSH_USER` | `deploy` |
 | Variable | `DOMAIN` | eure Domain — für den Health-Check |
+
 | Variable | `SSH_PORT` | nur falls nicht 22 |
 | Variable | `RESTART_COMMAND` | nur für Variante A (systemd) |
 | Variable | `VITE_WEATHER_BASE_URL` | nur falls Open-Meteo selbst gehostet |
+
+`DOMAIN`, `SSH_PORT` und `RESTART_COMMAND` werden aus **beiden** Reitern gelesen —
+ob GitHub etwas „Secret" oder „Variable" nennt, ist eine Eigenheit der Oberfläche
+und soll keinen Deploy stillschweigend zerlegen. Für `DOMAIN` ist der
+Variables-Reiter trotzdem der bessere Ort: Secrets werden in Logs durch `***`
+ersetzt, und dann liest sich der Health-Check als `https://***/`, was die
+Fehlersuche unnötig erschwert. Eine Domain ist ohnehin kein Geheimnis — sie steht
+im DNS.
 
 Der Host-Key wird **gepinnt**, nicht beim ersten Mal blind vertraut: ein Deploy
 bricht lieber ab, als den Schlüssel an irgendwen zu geben, der unter der Adresse

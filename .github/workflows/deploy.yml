@@ -73,7 +73,10 @@ jobs:
       - name: Upload
         env:
           TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
-          PORT: ${{ vars.SSH_PORT || '22' }}
+          # Accepted from either namespace. Whether a value counts as a "secret"
+          # or a "variable" is a GitHub distinction, not a property of the value,
+          # and putting it in the wrong tab should not silently break a deploy.
+          PORT: ${{ vars.SSH_PORT || secrets.SSH_PORT || '22' }}
         run: |
           SSH="ssh -p $PORT -i ~/.ssh/id_deploy -o IdentitiesOnly=yes"
           # The built app replaces the old one wholesale; stale hashed assets
@@ -85,16 +88,16 @@ jobs:
       - name: Restart
         env:
           TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
-          PORT: ${{ vars.SSH_PORT || '22' }}
-          # Container by default. Set the RESTART_COMMAND variable to
+          PORT: ${{ vars.SSH_PORT || secrets.SSH_PORT || '22' }}
+          # Container by default. Set RESTART_COMMAND to
           # 'sudo /usr/bin/systemctl restart rjadom' for a plain systemd host.
-          RESTART: ${{ vars.RESTART_COMMAND || 'sudo /usr/bin/docker restart rjadom' }}
+          RESTART: ${{ vars.RESTART_COMMAND || secrets.RESTART_COMMAND || 'sudo /usr/bin/docker restart rjadom' }}
         run: |
           ssh -p "$PORT" -i ~/.ssh/id_deploy -o IdentitiesOnly=yes "$TARGET" "$RESTART"
 
       - name: Health check
         env:
-          DOMAIN: ${{ vars.DOMAIN }}
+          DOMAIN: ${{ vars.DOMAIN || secrets.DOMAIN }}
         run: |
           # Deliberately fatal. A green run that checked nothing is worse than a
           # red one: it says "deployed and working" on the strength of an rsync.
