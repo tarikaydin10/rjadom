@@ -1,0 +1,10 @@
+node_modules
+dist
+dev-dist
+.env
+.env.local
+server/data
+*.log
+
+tsconfig.tsbuildinfo
+*.tsbuildinfo

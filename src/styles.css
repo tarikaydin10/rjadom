@@ -1,0 +1,552 @@
+/* Design tokens from the handoff. Nothing here is invented — the palette,
+   spacing scale, radii and type sizes are the ones the design specifies. */
+:root {
+  --paper: #f4efe6;
+  --card: #fffcf6;
+  --card-muted: #ede4d6;
+  --bar: #dbd0be;
+  --bar-ink: #e0d6c6;
+  --border: #e5daca;
+  --ink: #241f1b;
+  --ink-muted: #7a6a5c;
+  --ink-pale: #8a7a6a;
+  --terracotta: #b0563c;
+  --terracotta-dark: #9a5f42;
+  --apricot: #e8a87c;
+  --sand: #b79e86;
+  --night: #12111f;
+
+  --display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --body: 'Spectral', Georgia, 'Times New Roman', serif;
+
+  --gutter: 22px;
+  --radius-card: 14px;
+  --band-height: 232px;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #ede6da;
+}
+
+body {
+  font-family: var(--body);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+}
+
+.app {
+  width: 100%;
+  max-width: 440px;
+  min-height: 100dvh;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.kicker {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ---------- sky band ---------- */
+
+.sky {
+  position: relative;
+  height: var(--band-height);
+  overflow: hidden;
+  background: var(--night);
+  flex-shrink: 0;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+
+.sky:active {
+  cursor: grabbing;
+}
+
+.sky__layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* The soft terminator: the left city's light on the left, the right city's on
+   the right, and a wide dissolve where the day is actually crossing over. */
+.sky__layer--east {
+  -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 1) 78%);
+  mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 1) 78%);
+}
+
+.sky__star {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff6e6;
+}
+
+.sky__arc {
+  display: block;
+  position: absolute;
+  inset: 0;
+}
+
+.sky__moon,
+.sky__sun,
+.sky__dot {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.sky__moon {
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  background: #efeaf0;
+  box-shadow: 0 0 14px 4px rgba(239, 234, 240, 0.2);
+}
+
+.sky__sun {
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+}
+
+.sky__dot {
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  top: 186px;
+}
+
+.sky__scrim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 152px;
+  background: linear-gradient(180deg, rgba(20, 16, 28, 0.5) 0%, rgba(20, 16, 28, 0.34) 62%, rgba(20, 16, 28, 0) 100%);
+  pointer-events: none;
+}
+
+.sky__cities {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  right: 0;
+  padding: 6px var(--gutter) 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.sky__city {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.sky__city--right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.sky__name {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.sky__time {
+  font-family: var(--display);
+  font-size: 31px;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.sky__note {
+  font-size: 11px;
+}
+
+/* ---------- status line ---------- */
+
+.status {
+  padding: 9px var(--gutter) 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.status__text {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--terracotta-dark);
+}
+
+.status__now {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--terracotta);
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ---------- content ---------- */
+
+.content {
+  flex: 1;
+  padding: 12px var(--gutter) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.question {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.question__kicker {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+}
+
+.question__primary {
+  font-family: var(--display);
+  font-size: 31px;
+  line-height: 1.15;
+  text-wrap: pretty;
+}
+
+.question__secondary {
+  font-family: var(--display);
+  font-size: 24px;
+  line-height: 1.2;
+  color: var(--ink-pale);
+  font-style: italic;
+  text-wrap: pretty;
+}
+
+.answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  flex: 1;
+  min-height: 140px;
+}
+
+.answer {
+  border-radius: var(--radius-card);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.answer--mine {
+  background: var(--card);
+  border: 1px solid var(--border);
+  text-align: left;
+  font-family: inherit;
+  cursor: text;
+}
+
+.answer--theirs {
+  background: var(--card-muted);
+}
+
+.answer__label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.answer__text {
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+
+.answer__placeholder {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-pale);
+  font-style: italic;
+}
+
+.answer__foot {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+/* Placeholder bars for an answer that has not been unlocked. They contain no
+   text at all — the partner's words are not on this device yet. */
+.answer__bar {
+  height: 15px;
+  border-radius: 5px;
+  background: var(--bar);
+}
+
+.answer__bar--short {
+  width: 70%;
+}
+
+.answer__editor {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  resize: none;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+  padding: 0;
+  min-height: 64px;
+}
+
+.answer__editor:focus {
+  outline: none;
+}
+
+.answer__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.button {
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  border-radius: 999px;
+  border: 1px solid var(--terracotta);
+  background: var(--terracotta);
+  color: var(--paper);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--terracotta);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.countdown {
+  background: var(--ink);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.countdown__kicker {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sand);
+}
+
+.countdown__where {
+  font-size: 15px;
+  color: var(--paper);
+}
+
+.countdown__number {
+  font-family: var(--display);
+  font-size: 40px;
+  line-height: 1;
+  color: var(--apricot);
+}
+
+.countdown__unit {
+  font-size: 12px;
+  color: var(--sand);
+}
+
+/* ---------- chrome ---------- */
+
+.netline {
+  padding: 8px var(--gutter) 0;
+  font-size: 11px;
+  color: var(--ink-muted);
+  font-style: italic;
+  flex-shrink: 0;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 14px 0 calc(30px + env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  flex-shrink: 0;
+}
+
+.tabs__item {
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.tabs__item--active {
+  color: var(--terracotta);
+}
+
+/* ---------- simple screens ---------- */
+
+.screen {
+  flex: 1;
+  padding: 24px var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.screen__title {
+  font-family: var(--display);
+  font-size: 31px;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.screen__note {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-pale);
+  font-style: italic;
+  margin: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field__label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.field__input {
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.field__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.segment {
+  display: flex;
+  gap: 6px;
+}
+
+.segment__item {
+  font-family: inherit;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink-muted);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+
+.segment__item--active {
+  border-color: var(--terracotta);
+  background: var(--terracotta);
+  color: var(--paper);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section__title {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+}
+
+.hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
