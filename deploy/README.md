@@ -216,6 +216,32 @@ muss.
 
 ---
 
+## Das Passwort ändern
+
+Es steht ausschließlich in `/etc/rjadom.env` auf dem Server — nie im Code, nie
+im Repository, nie im Build. Ändern heißt also:
+
+```bash
+echo 'PAIR_SECRET=DEIN-NEUES-PASSWORT' > /etc/rjadom.env
+chown root:root /etc/rjadom.env && chmod 600 /etc/rjadom.env
+cd /srv/rjadom && docker compose up -d --force-recreate
+```
+
+Danach melden sich beide Telefone einmal neu an: unter „Мы / Us" auf „Dieses
+Gerät vergessen", dann das neue Passwort. **Eure Antworten bleiben erhalten** —
+sie hängen nicht am Passwort.
+
+Zwei Dinge, die der Server erzwingt bzw. erlaubt:
+
+* **Mindestens 16 Zeichen.** Darunter startet er gar nicht erst, mit genau dieser
+  Meldung. Die Adresse der App ist nicht geheim — in den Logs stehen Bots, die
+  jede Domain abklappern — und Ratenbegrenzung kauft gegen ein kurzes
+  Wörterbuchwort nur Zeit, keine Sicherheit.
+* **Beliebige Zeichen**, auch Kyrillisch oder Emoji. Der Client kodiert das
+  Passwort, bevor es in den HTTP-Header geht: Header dürfen nur Latin-1
+  enthalten, ein russisches Passwort würde sonst schon im Browser scheitern.
+  Ein Passwort auf Russisch ist also möglich — und für diese App naheliegend.
+
 ## Wenn ein Geheimnis abhandenkommt
 
 Es gibt genau zwei, und beide sind in Minuten ersetzt. Das ist Absicht: ein

@@ -100,7 +100,40 @@ function throttled(ip) {
   return record.count >= MAX_ATTEMPTS;
 }
 
+/**
+ * A second brake, counted globally rather than per address.
+ *
+ * The per-IP limit assumes the attacker has one address, which is a poor
+ * assumption. This one costs nothing to the two people who use this: unlocking
+ * happens twice in the life of a deployment, once per phone, so a run of
+ * failures is never legitimate traffic. Each failure makes the *next* wrong
+ * answer slower for everybody, and an attacker can rotate addresses but cannot
+ * rotate the clock.
+ *
+ * A delay rather than a lockout, deliberately: a hard lock would let a stranger
+ * shut the two of you out of your own page by guessing badly on purpose.
+ *
+ * This buys time against a guessable passphrase. It does not make one safe —
+ * only a passphrase that is not in a word list does that.
+ */
+let globalFailures = 0;
+let globalWindowStart = Date.now();
+const GLOBAL_WINDOW_MS = 60 * 60 * 1000;
+const MAX_DELAY_MS = 15000;
+
+function failureDelayMs() {
+  if (Date.now() - globalWindowStart > GLOBAL_WINDOW_MS) {
+    globalFailures = 0;
+    globalWindowStart = Date.now();
+  }
+  // First couple of failures answer instantly — that is a typo, not an attack.
+  return Math.min(Math.max(0, globalFailures - 2) * 1500, MAX_DELAY_MS);
+}
+
+const sleep = (ms) => (ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve());
+
 function noteFailure(ip) {
+  globalFailures++;
   const record = attempts.get(ip);
   if (!record || Date.now() - record.since > ATTEMPT_WINDOW_MS) {
     attempts.set(ip, { count: 1, since: Date.now() });
@@ -109,9 +142,24 @@ function noteFailure(ip) {
   }
 }
 
+/**
+ * Header values are ISO-8859-1, so a passphrase with any character outside that
+ * range cannot travel raw — the browser refuses to send it at all. The client
+ * encodes the UTF-8 bytes and marks them with a `b64:` prefix; anything without
+ * the prefix is taken literally, so a client from before this change still works.
+ */
+function decodeSecret(raw) {
+  if (!raw.startsWith('b64:')) return raw;
+  try {
+    return Buffer.from(raw.slice(4), 'base64').toString('utf8');
+  } catch {
+    return '';
+  }
+}
+
 function authenticate(req) {
   const member = String(req.headers['x-pair-member'] ?? '');
-  const secret = String(req.headers['x-pair-secret'] ?? '');
+  const secret = decodeSecret(String(req.headers['x-pair-secret'] ?? ''));
   if (!MEMBERS.has(member)) return null;
   if (!constantTimeEquals(secret, SECRET)) return null;
   return member;
@@ -290,6 +338,7 @@ const server = createServer(async (req, res) => {
   const member = authenticate(req);
   if (!member) {
     noteFailure(ip);
+    await sleep(failureDelayMs());
     send(res, 401, { error: 'unauthorized' });
     return;
   }

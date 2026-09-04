@@ -53,6 +53,25 @@ export interface DayResponse {
   };
 }
 
+/**
+ * The passphrase travels base64-encoded, and not for secrecy — TLS handles that.
+ *
+ * HTTP header values are limited to ISO-8859-1. A Russian passphrase, which is
+ * the natural choice for half of this pair, makes the browser refuse the request
+ * outright with "String contains non ISO-8859-1 code point", and a raw UTF-8
+ * value sent by other clients arrives mangled. Encoding the bytes first means
+ * any passphrase works: Cyrillic, emoji, whatever the two of you pick.
+ *
+ * The `b64:` prefix keeps it unambiguous, so a device unlocked before this
+ * change keeps working until it is re-unlocked.
+ */
+function encodeSecret(secret: string): string {
+  const bytes = new TextEncoder().encode(secret);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return `b64:${btoa(binary)}`;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -76,7 +95,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
         'content-type': 'application/json',
         accept: 'application/json',
         'x-pair-member': pair.member,
-        'x-pair-secret': pair.secret,
+        'x-pair-secret': encodeSecret(pair.secret),
         ...init?.headers,
       },
     });
@@ -105,7 +124,7 @@ export function putAnswer(
 export async function verifyPair(member: PairMember, secret: string): Promise<boolean> {
   if (DISABLED) return true; // Nothing to verify against in local-only mode.
   const res = await fetch(`${BASE}/api/session`, {
-    headers: { accept: 'application/json', 'x-pair-member': member, 'x-pair-secret': secret },
+    headers: { accept: 'application/json', 'x-pair-member': member, 'x-pair-secret': encodeSecret(secret) },
   });
   if (res.status === 401 || res.status === 403) return false;
   if (!res.ok) throw new ApiError(`HTTP ${res.status}`, res.status);
