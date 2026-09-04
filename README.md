@@ -186,23 +186,42 @@ Es gibt nichts, was man mit den Entwicklerwerkzeugen aufdecken könnte.
 
 ## Deployment
 
-Ein Host, zwei Prozesse — oder auch nur einer, denn der Server liefert `dist/`
-gleich mit aus:
+Vollständige Anleitung für einen Hetzner-VPS: **[`deploy/README.md`](deploy/README.md)**.
+Einmal einrichten, danach deployt jeder Push auf `main` automatisch über
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
-```bash
-npm ci && npm run build
+Der Zuschnitt in einem Satz: gebaut wird in der CI, auf den Server gehen nur
+`dist/` und **eine einzige Server-Datei ohne Abhängigkeiten** — zusammen rund
+1 MB, 40 Dateien, kein `node_modules`, kein npm auf dem VPS. Ein Deploy ist
+damit zwei `rsync` und ein `systemctl restart`, und eine kaputte
+Paket-Registry kann die laufende App nie umwerfen, nur eine neue Version
+verhindern.
 
-# /etc/systemd/system/rjadom.service
-# Environment=PAIR_SECRET=...  DATA_DIR=/var/lib/rjadom  PORT=8787
-# ExecStart=/usr/bin/node /srv/rjadom/server/index.js
+```
+Caddy (TLS)  →  127.0.0.1:8787  →  node server/index.mjs  →  dist/  +  /api
 ```
 
-Davor ein TLS-Terminator (Caddy, nginx). `DATA_DIR` auf ein Volume legen, das
-Deployments überlebt. Backup ist eine JSON-Datei.
+Der Node-Prozess bindet ausschließlich auf Loopback; nach außen spricht nur
+Caddy. `DATA_DIR` liegt bewusst außerhalb des Deploy-Verzeichnisses
+(`/var/lib/rjadom`), damit ein Deploy eure Antworten nicht anfassen kann. Die
+Passphrase steht nur in `/etc/rjadom.env` auf dem Server — nie im Repository,
+nie im Build, nie in der CI.
+
+Der Health-Check nach jedem Deploy prüft genau zwei Dinge: `GET /` muss **200**
+liefern und `GET /api/session` ohne Zugangsdaten **401**. Damit ist bestätigt,
+dass die App läuft *und* das Schloss zu ist — ohne dass das Geheimnis dafür in
+die CI muss.
 
 Sollen App und API doch auf verschiedenen Hosts liegen, setzt
 `VITE_SYNC_BASE_URL` auf die API-Origin und `ALLOWED_ORIGIN` auf die der App.
 Mit `VITE_SYNC_BASE_URL=off` läuft die App ganz ohne Server, rein lokal.
+
+### Sicherheits-Header
+
+Der Server schickt eine enge Content-Security-Policy mit: alles von der eigenen
+Origin, als einzige erlaubte Auslandsverbindung der Wetter-Endpunkt. Sie ist
+gegen die laufende App getestet, nicht nur aufgeschrieben. Hostest du Open-Meteo
+selbst, setze `WEATHER_ORIGIN` auf dem Server passend zu `VITE_WEATHER_BASE_URL`.
 
 ---
 

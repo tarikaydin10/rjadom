@@ -1,0 +1,91 @@
+# Build here, ship the result, restart there.
+#
+# The VPS never needs a toolchain or a package registry: the app is a folder of
+# static files and the server has no dependencies at all, so a deploy is two
+# rsyncs and a restart. That also means a broken npm registry can never take the
+# running app down — only prevent a new one from being built.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          # Empty means same origin, which is the recommended deployment. Set the
+          # repository variable only if you run your own Open-Meteo instance.
+          VITE_WEATHER_BASE_URL: ${{ vars.VITE_WEATHER_BASE_URL }}
+        run: npm run build
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # Pinned host key, not trust-on-first-use: a deploy must fail rather
+          # than hand the key to whoever answers on that address.
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Upload
+        env:
+          TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+          PORT: ${{ vars.SSH_PORT || '22' }}
+        run: |
+          SSH="ssh -p $PORT -i ~/.ssh/id_deploy -o IdentitiesOnly=yes"
+          # The built app replaces the old one wholesale; stale hashed assets
+          # would otherwise pile up forever.
+          rsync -az --delete -e "$SSH" dist/ "$TARGET:/srv/rjadom/dist/"
+          # The server is a single file with no dependencies.
+          rsync -az -e "$SSH" server/index.mjs "$TARGET:/srv/rjadom/server/index.mjs"
+
+      - name: Restart
+        env:
+          TARGET: ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
+          PORT: ${{ vars.SSH_PORT || '22' }}
+        run: |
+          ssh -p "$PORT" -i ~/.ssh/id_deploy -o IdentitiesOnly=yes "$TARGET" \
+            'sudo /usr/bin/systemctl restart rjadom'
+
+      - name: Health check
+        env:
+          DOMAIN: ${{ vars.DOMAIN }}
+        run: |
+          if [ -z "$DOMAIN" ]; then echo "DOMAIN variable not set, skipping"; exit 0; fi
+          for attempt in 1 2 3 4 5; do
+            sleep 3
+            shell=$(curl -fsS -o /dev/null -w '%{http_code}' "https://$DOMAIN/" || true)
+            # No credentials must be turned away. This proves the API is alive
+            # *and* that the lock is on, without putting the secret in CI.
+            api=$(curl -sS -o /dev/null -w '%{http_code}' "https://$DOMAIN/api/session" || true)
+            echo "attempt $attempt: shell=$shell api=$api"
+            if [ "$shell" = "200" ] && [ "$api" = "401" ]; then
+              echo "Deployed and locked."
+              exit 0
+            fi
+          done
+          echo "Health check failed: expected shell 200 and api 401." >&2
+          exit 1

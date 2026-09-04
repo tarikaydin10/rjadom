@@ -1,0 +1,25 @@
+# /etc/caddy/Caddyfile
+#
+# Caddy terminates TLS (certificate obtained and renewed automatically) and
+# passes everything to the Node process on loopback. The app and the API are
+# therefore one origin: one hostname that has to stay reachable, no CORS, no
+# third-party host in the path.
+
+rjadom.example.com {
+	encode zstd gzip
+
+	# The application sets its own Content-Security-Policy and cache headers;
+	# these are the ones that belong to the transport.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:8787
+
+	log {
+		# A private page for two people. There is no reason to keep a record of
+		# when each of them opened it; comment this out if you want request logs.
+		output discard
+	}
+}

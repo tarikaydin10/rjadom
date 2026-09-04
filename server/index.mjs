@@ -22,6 +22,10 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 8787);
+// Loopback by default: in the recommended setup a TLS terminator sits in front,
+// and the Node process has no business being reachable from the open internet.
+// Set HOST=0.0.0.0 when running in a container that publishes the port itself.
+const HOST = process.env.HOST ?? '127.0.0.1';
 const SECRET = process.env.PAIR_SECRET ?? '';
 const DATA_DIR = process.env.DATA_DIR ?? join(HERE, 'data');
 const DATA_FILE = join(DATA_DIR, 'answers.json');
@@ -29,6 +33,9 @@ const STATIC_DIR = process.env.STATIC_DIR ?? join(HERE, '..', 'dist');
 // Same-origin deployment needs no CORS at all; set this only if the app is
 // served from a different host than the API.
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? '';
+// The only origin the page is allowed to call out to. Change it in step with
+// VITE_WEATHER_BASE_URL if you point the app at your own Open-Meteo instance.
+const WEATHER_ORIGIN = process.env.WEATHER_ORIGIN ?? 'https://api.open-meteo.com';
 
 if (!SECRET || SECRET.length < 16) {
   console.error('PAIR_SECRET must be set and at least 16 characters. Refusing to start.');
@@ -188,6 +195,36 @@ function readBody(req) {
   });
 }
 
+/**
+ * What the page is allowed to do, stated as narrowly as the app actually needs.
+ *
+ * Everything is served from this origin, so the only outbound connection the
+ * page may make is the weather endpoint. `style-src` needs 'unsafe-inline'
+ * because the sky is drawn with computed inline styles; nothing else is relaxed.
+ */
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  `connect-src 'self' ${WEATHER_ORIGIN}`,
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+].join('; ');
+
+const SECURITY_HEADERS = {
+  'content-security-policy': CSP,
+  'x-content-type-options': 'nosniff',
+  'referrer-policy': 'no-referrer',
+  'x-robots-tag': 'noindex, nofollow',
+  'permissions-policy': 'geolocation=(), microphone=(), camera=(), interest-cohort=()',
+};
+
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -224,8 +261,7 @@ async function serveStatic(req, res, pathname) {
   res.writeHead(200, {
     'content-type': MIME[ext] ?? 'application/octet-stream',
     'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache',
-    'x-robots-tag': 'noindex, nofollow',
-    'x-content-type-options': 'nosniff',
+    ...SECURITY_HEADERS,
   });
   createReadStream(file).pipe(res);
 }
@@ -316,4 +352,4 @@ const server = createServer(async (req, res) => {
 });
 
 await loadStore();
-server.listen(PORT, () => console.log(`rjadom server on :${PORT}`));
+server.listen(PORT, HOST, () => console.log(`rjadom server on ${HOST}:${PORT}`));
