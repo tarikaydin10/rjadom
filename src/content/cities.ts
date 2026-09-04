@@ -29,12 +29,10 @@ export const otherCity = (id: CityId): CityId => (id === 'hamburg' ? 'kaliningra
  * read without mental mirroring. West on the left is also the orientation
  * everyone brings from a map, and the one a map screen would have to use.
  *
- * It does leave one inconsistency: horizontally the band is solar azimuth, where
- * east enters on the left, so the eastern city sits on the western side. In
- * practice that is invisible — the two skies differ by at most about a fifth of
- * the colour range, only during the roughly eighty minutes a day around the
- * horizon crossings, and the terminator mask blends them across most of the
- * width anyway. A shared frame of reference is worth more than that.
+ * West on the left also fixes which way the sky has to move: east is the right
+ * edge, so the sun rises on the right over Kaliningrad — which really does get
+ * light about forty minutes earlier — and sets on the left over Hamburg, which
+ * really does keep it longest. See `place()` in `sky/engine.ts`.
  *
  * The personal axis lives elsewhere and stays personal: the answer columns are
  * yours and theirs, and the status line still reads from the city you are in.

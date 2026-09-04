@@ -65,10 +65,26 @@ export function gradientFor(altDeg: number): string {
 /**
  * Where a body sits in the band.
  *
+ * The band reads like a landscape: the ground below is geography, west on the
+ * left, so Hamburg sits left and Kaliningrad — 10.5° further east — sits right.
+ * The sky above therefore has to agree that east is on the right, which means
+ * the sun enters on the RIGHT at dawn and leaves on the LEFT at dusk. That is
+ * the reverse of a sky-dome drawing, and it is the direction that makes the
+ * picture true: the sun comes up over Kaliningrad, which really does get light
+ * about forty minutes earlier, and goes down over Hamburg, which really does
+ * keep it longest. The light travels from her side to yours.
+ *
+ * The two scales cannot both be honest, and this one does not pretend they are.
+ * The cities are 10.5° apart — 42 minutes of sun — while a day is 360° and 24
+ * hours, so any single axis showing both is off by a factor of about thirty.
+ * Placing the cities truly to scale would leave them eleven pixels apart; giving
+ * the sun a true scale would park it off-screen for twenty-three hours a day.
+ * So the ground is deliberately exaggerated and the sky is a sky, exactly as in
+ * a landscape painting, and the one thing that must not be wrong — which way
+ * east is — is the same in both.
+ *
  * SunCalc reports azimuth in degrees clockwise from north (0 N, 90 E, 180 S,
- * 270 W). The band wants a signed offset from south — negative east, positive
- * west — so the sweep is the real one: entering on the left in the morning,
- * leaving on the right in the evening, and a wider arc in summer than in winter.
+ * 270 W); `southOffset` turns that into a signed angle either side of south.
  * Vertical position is the design's compressed scale, not a projection.
  */
 function southOffset(azimuthFromNorth: number): number {
@@ -76,7 +92,8 @@ function southOffset(azimuthFromNorth: number): number {
 }
 
 function place(altDeg: number, azimuthFromNorth: number): { x: number; y: number } {
-  const x = Math.min(96, Math.max(4, 50 + (southOffset(azimuthFromNorth) / 180) * 62));
+  // Negated: east (a negative offset) belongs on the right.
+  const x = Math.min(96, Math.max(4, 50 - (southOffset(azimuthFromNorth) / 180) * 62));
   const y =
     altDeg >= 0
       ? HORIZON - Math.min(1, altDeg / MAX_ALT) * (HORIZON - APEX)

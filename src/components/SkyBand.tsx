@@ -55,7 +55,10 @@ export function SkyBand({ row, ms, leftCity, rightCity, weather, onScrubTo, onSc
       state.engaged = true;
       event.currentTarget.setPointerCapture(event.pointerId);
     }
-    const slot = Math.round(state.slot + (dx / state.width) * SLOTS);
+    // The sky follows the finger. Since the sun travels east to west — right to
+    // left — dragging right pulls the day backwards, which is what "moving the
+    // sky itself" has to mean once the direction of travel is fixed.
+    const slot = Math.round(state.slot - (dx / state.width) * SLOTS);
     onScrubTo(Math.min(SLOTS - 1, Math.max(0, slot)));
   };
 

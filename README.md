@@ -105,12 +105,24 @@ Die lokale Datenbank ist die Wahrheit, nicht ein Cache des Servers.
 * Der Service Worker cacht die gesamte App-Shell samt Schriften, also startet sie
   auch offline.
 
-**Eine gemeinsame Ausrichtung.** Das Himmelsband steht auf beiden Telefonen
-gleich: Hamburg links, Kaliningrad rechts (`BAND_ORDER` in
-`src/content/cities.ts`). Nicht „deine Stadt zuerst" — ihr redet über diesen
-Screen, also muss „links" für euch beide dasselbe heißen und ein Screenshot ohne
-Kopfspiegelung lesbar sein. Persönlich bleibt nur die Sprache: die Statuszeile
-liest weiter aus, in welcher Stadt du stehst.
+**Eine gemeinsame Ausrichtung.** Das Band liest sich wie eine Landschaft: unten
+Geografie, oben Himmel. Westen links, also Hamburg links und Kaliningrad rechts
+— auf beiden Telefonen gleich (`BAND_ORDER` in `src/content/cities.ts`). Nicht
+„deine Stadt zuerst": ihr redet über diesen Screen, also muss „links" für euch
+beide dasselbe heißen. Persönlich bleibt nur die Sprache — die Statuszeile liest
+weiter aus, in welcher Stadt du stehst.
+
+Damit steht auch fest, wohin die Sonne läuft: Osten ist rechts, also geht sie
+**rechts über Kaliningrad auf** und **links über Hamburg unter**. Genau so ist es
+auch draußen — Kaliningrad wird 42 Minuten früher hell, Hamburg behält das Licht
+am längsten. Das Licht wandert von ihr zu dir.
+
+Die beiden Maßstäbe können nicht beide ehrlich sein, und das Band tut auch nicht
+so: eure Städte liegen 10,5° auseinander (42 Minuten Sonne), ein Tag hat 360° und
+24 Stunden — Faktor ~30. Maßstabstreu wären eure Städte elf Pixel auseinander,
+oder die Sonne stünde 23 Stunden am Tag außerhalb des Bildes. Also ist der Boden
+bewusst überzeichnet und der Himmel ein Himmel, wie in einem Landschaftsbild.
+Das Einzige, was nicht falsch sein darf — wo Osten ist — stimmt in beiden Ebenen.
 
 **Ein gemeinsamer Tag.** Hamburg und Kaliningrad liegen im Winter eine Stunde
 auseinander. Ein naives lokales Datum hätte die beiden abends auf verschiedene
