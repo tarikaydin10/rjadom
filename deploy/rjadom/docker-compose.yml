@@ -15,8 +15,11 @@ services:
     restart: unless-stopped
     command: node /app/server/index.mjs
     working_dir: /app
-    # Not root. The process reads one directory and writes one directory.
-    user: "1000:1000"
+    # Not root, and deliberately not the deploy user either. Set these in
+    # /srv/rjadom/.env from a dedicated service account — if this ran as the
+    # same UID that the deploy key logs in as, a leaked deploy key would also
+    # own the app's data directory. Compose fails loudly rather than guessing.
+    user: "${RJADOM_UID:?set RJADOM_UID in /srv/rjadom/.env}:${RJADOM_GID:?set RJADOM_GID in /srv/rjadom/.env}"
     environment:
       # Inside a container this must be 0.0.0.0 — loopback here would mean
       # "reachable by nobody", including the proxy. Only the edge network can
@@ -26,7 +29,9 @@ services:
       STATIC_DIR: /app/dist
       DATA_DIR: /data
       NODE_ENV: production
-    # Holds PAIR_SECRET=... — root-owned, chmod 600, never in the repository.
+    # Holds PAIR_SECRET=... — root:root, chmod 600, never in the repository.
+    # Docker reads this file itself, as root, and passes the values in; the
+    # container user never needs access to it, so do not widen it for them.
     env_file:
       - /etc/rjadom.env
     volumes:

@@ -83,13 +83,20 @@ mkdir -p /srv/edge/conf.d /srv/rjadom/app/dist /srv/rjadom/app/server /var/lib/r
 cp deploy/edge/docker-compose.yml /srv/edge/
 cp deploy/edge/Caddyfile /srv/edge/          # E-Mail-Adresse eintragen
 
-# Der Container läuft als UID 1000 und muss in /var/lib/rjadom schreiben können.
-chown -R 1000:1000 /var/lib/rjadom && chmod 750 /var/lib/rjadom
+# Ein eigener Dienstbenutzer für den Container — ausdrücklich nicht derselbe,
+# unter dem der Deploy einloggt. Sonst gehörte einem geleakten Deploy-Key auch
+# gleich das Datenverzeichnis. `adduser deploy` bekommt auf einem frischen
+# Ubuntu UID 1000; deshalb hier nie 1000 fest verdrahten.
+adduser --system --group --no-create-home --shell /usr/sbin/nologin rjadomsvc
+printf 'RJADOM_UID=%s\nRJADOM_GID=%s\n' "$(id -u rjadomsvc)" "$(id -g rjadomsvc)" \
+  > /srv/rjadom/.env
+chown -R rjadomsvc:rjadomsvc /var/lib/rjadom && chmod 750 /var/lib/rjadom
 
+# Die Passphrase liest Docker selbst, als root, und reicht sie in den Container.
+# Der Container-Benutzer braucht die Datei nie — also gehört sie root allein.
 node -e "console.log('PAIR_SECRET=' + require('crypto').randomBytes(24).toString('base64url'))" \
   > /etc/rjadom.env
-# Nur der Container-Benutzer und root dürfen sie lesen — nicht alle Welt.
-chown 1000:1000 /etc/rjadom.env && chmod 600 /etc/rjadom.env
+chown root:root /etc/rjadom.env && chmod 600 /etc/rjadom.env
 cat /etc/rjadom.env
 ```
 
@@ -191,6 +198,41 @@ die App läuft *und* das Schloss zu ist — ohne dass die Passphrase je in die C
 muss.
 
 ---
+
+## Wenn ein Geheimnis abhandenkommt
+
+Es gibt genau zwei, und beide sind in Minuten ersetzt. Das ist Absicht: ein
+Geheimnis, dessen Austausch wehtut, tauscht man im Zweifel nicht aus.
+
+Passiert das versehentlich — in eine Chat-Nachricht kopiert, in ein Log
+geraten, auf einem fremden Rechner geöffnet — dann **beide** ersetzen, nicht nur
+das offensichtliche. Wer den Deploy-Schlüssel hat, kann den ausgelieferten Code
+austauschen und den Dienst neu starten; damit ist auch alles kompromittiert, was
+der Prozess sieht.
+
+```bash
+# 1 · Deploy-Schlüssel
+: > /home/deploy/.ssh/authorized_keys
+ssh-keygen -t ed25519 -f /tmp/k -C github-actions -N ''
+cat /tmp/k.pub >> /home/deploy/.ssh/authorized_keys
+chown deploy:deploy /home/deploy/.ssh/authorized_keys && chmod 600 /home/deploy/.ssh/authorized_keys
+cat /tmp/k          # → direkt in das GitHub-Secret, danach:
+shred -u /tmp/k /tmp/k.pub
+
+# 2 · Passphrase
+node -e "console.log('PAIR_SECRET=' + require('crypto').randomBytes(24).toString('base64url'))" \
+  > /etc/rjadom.env
+chown root:root /etc/rjadom.env && chmod 600 /etc/rjadom.env
+cd /srv/rjadom && docker compose up -d --force-recreate
+```
+
+Nach Schritt 2 melden sich beide Telefone einmal neu an — unter „Мы / Us" auf
+„Dieses Gerät vergessen", dann die neue Passphrase eingeben. **Eure Antworten
+bleiben dabei erhalten**, sie hängen nicht an der Passphrase.
+
+Geheimnisse nie über einen Umweg weitergeben. `cat` direkt vor dem Einfügen ins
+Zielfeld, und das war es — nicht erst in eine Datei, einen Chat oder eine
+Notiz-App.
 
 ## Sicherung
 
