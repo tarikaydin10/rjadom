@@ -21,7 +21,10 @@
 
   --gutter: 22px;
   --radius-card: 14px;
-  --band-height: 232px;
+  --band-height: 278px;
+  /* Where the sky stops and the ground starts, inside the band's own
+     coordinates. Mirrors HORIZON in sky/engine.ts. */
+  --horizon: 186px;
 
   /* The phone's own obstructions, named once and used everywhere.
      Routed through variables rather than calling env() at each site: it keeps
@@ -109,7 +112,7 @@ textarea {
 /* ---------- sky band ---------- */
 
 /* The band grows by whatever the phone hides at the top, so the sky bleeds up
-   under the island while everything drawn in it keeps its own 232px coordinate
+   under the island while everything drawn in it keeps its own coordinate
    system — see .sky__frame. */
 .sky {
   position: relative;
@@ -155,7 +158,7 @@ textarea {
   left: 0;
   right: 0;
   top: 0;
-  height: 186px;
+  height: var(--horizon);
 }
 
 .wx__cloud {
@@ -218,11 +221,13 @@ textarea {
   }
 }
 
-/* Starts under the note line and stops at the horizon: rain falls in the sky,
-   not across the city names or into the ground. */
+/* Falls the height of the sky and stops at the horizon — rain falls in the
+   sky, not into the ground. It used to start halfway down, below the city names
+   that were written across the sky; they are on the ground now, and it can fall
+   from the top. */
 @keyframes fall {
   from {
-    transform: translateY(120px);
+    transform: translateY(40px);
     opacity: 0;
   }
   12% {
@@ -239,14 +244,14 @@ textarea {
 
 @keyframes flutter {
   from {
-    transform: translate(0, 116px);
+    transform: translate(0, 36px);
     opacity: 0;
   }
   15% {
     opacity: 1;
   }
   50% {
-    transform: translate(7px, 152px);
+    transform: translate(7px, 111px);
   }
   85% {
     opacity: 1;
@@ -257,9 +262,9 @@ textarea {
   }
 }
 
-/* Everything positioned in band coordinates — horizon at 186, city labels at
-   52, the tracks, the stars — lives in here, pushed down past the island. Only
-   the colour layers behind it fill the whole band. */
+/* Everything positioned in band coordinates — the horizon, the ground and the
+   cities on it, the tracks, the stars — lives in here, pushed down past the
+   island. Only the colour layers behind it fill the whole band. */
 .sky__frame {
   position: absolute;
   left: 0;
@@ -275,7 +280,7 @@ textarea {
   left: 0;
   right: 0;
   top: 0;
-  height: calc(var(--safe-top) + 186px);
+  height: calc(var(--safe-top) + var(--horizon));
   overflow: hidden;
 }
 
@@ -329,24 +334,59 @@ textarea {
   margin: -10px 0 0 -10px;
 }
 
-.sky__scrim {
+/* Land. It replaces the scrim that used to darken the top half of the sky so
+   the city names could be read over it — the sky was being spoiled to hold
+   text that belongs on the ground anyway. This wash is weak and constant: it
+   reads as terrain lying in its own shadow at any hour, rather than as a panel
+   laid over the picture.
+
+   Warm rather than neutral, and deliberately so: a grey wash under a blue noon
+   sky came out as a slab of interface, while earth over the same sky reads as
+   land — and it meets the paper below it in the same family of colour instead
+   of crossing from cold to warm at the join. */
+.sky__ground {
   position: absolute;
-  top: 0;
+  top: var(--horizon);
   left: 0;
   right: 0;
-  /* Starts at the very top of the band, not below the island, so the darkening
-     behind the city names is continuous. */
-  height: calc(152px + var(--safe-top));
-  background: linear-gradient(180deg, rgba(20, 16, 28, 0.5) 0%, rgba(20, 16, 28, 0.34) 62%, rgba(20, 16, 28, 0) 100%);
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(74, 56, 42, 0.26) 0%, rgba(74, 56, 42, 0.17) 46%, rgba(74, 56, 42, 0.1) 100%);
   pointer-events: none;
 }
 
-.sky__cities {
+/* The one edge that should be hard is the horizon. Where the band meets the
+   page there used to be a second one, just as sharp and meaning nothing, and it
+   is the first thing the eye finds. So the ground dissolves into the paper.
+
+   The ramp is deliberately late: for its first half it is barely there, which
+   keeps the city note lines clear of it, and the dissolve happens in the last
+   few pixels where there is nothing to obscure. Value never jumps — only the
+   slope does — so there is no line to see. */
+.sky__hem {
   position: absolute;
-  top: 52px;
   left: 0;
   right: 0;
-  padding: 6px var(--gutter) 0;
+  bottom: 0;
+  height: 40px;
+  background: linear-gradient(
+    180deg,
+    rgba(244, 239, 230, 0) 0%,
+    rgba(244, 239, 230, 0.06) 55%,
+    rgba(244, 239, 230, 0.3) 78%,
+    rgba(244, 239, 230, 0.75) 92%,
+    var(--paper) 100%
+  );
+  pointer-events: none;
+}
+
+/* On the ground, not in the sky: a city stands under the horizon, and the sky
+   above it is left to the sun, the moon and the stars. */
+.sky__cities {
+  position: absolute;
+  top: var(--horizon);
+  left: 0;
+  right: 0;
+  padding: 12px var(--gutter) 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
@@ -356,7 +396,7 @@ textarea {
 .sky__city {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -416,7 +456,11 @@ textarea {
 
 .content {
   flex: 1;
-  padding: 12px var(--gutter) 0;
+  /* The bottom padding is the gap above the tab bar. It belongs to the scroller
+     rather than to the bar, so it is breathing room when the content is short
+     and scrolls away when it is not — the bar's own margin was dead space in
+     both cases. */
+  padding: 12px var(--gutter) 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -637,14 +681,15 @@ textarea {
 .tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  /* Sits on the bottom edge, clear of the home indicator. */
-  padding: 14px 0 calc(16px + var(--safe-bottom));
+  /* Sits on the bottom edge, clear of the home indicator. The home indicator's
+     own strip is already unusable; the bar should not add a second empty one
+     above it, so its own padding is kept tight. */
+  padding: 10px 0 calc(10px + var(--safe-bottom));
   text-align: center;
   font-size: 11px;
   letter-spacing: 0.1em;
   color: var(--ink-muted);
   border-top: 1px solid var(--border);
-  margin-top: 16px;
   flex-shrink: 0;
 }
 
@@ -655,7 +700,7 @@ textarea {
   font-size: inherit;
   letter-spacing: inherit;
   color: inherit;
-  padding: 4px 0;
+  padding: 3px 0;
   cursor: pointer;
 }
 

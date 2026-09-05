@@ -4,7 +4,7 @@ import { CITIES, type CityId } from '../content/cities';
 import type { SkyDay, SkyRow } from '../sky/engine';
 import { STARS } from '../sky/stars';
 import { ASTERISMS, CATALOGUE, VISIBLE_FROM_SOUTH, starPosition } from '../sky/catalogue';
-import { place, southOffset } from '../sky/engine';
+import { BAND_HEIGHT, HORIZON, place, southOffset } from '../sky/engine';
 import { MoonDisc } from './MoonDisc';
 import { nextEvent } from '../sky/notes';
 import { conditionKey, observationAt, type WeatherCache } from '../weather/openmeteo';
@@ -153,12 +153,10 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
       <div className="sky__layer" style={{ background: row.sky[leftCity] }} />
       <div className="sky__layer sky__layer--east" style={{ background: row.sky[rightCity] }} />
 
-      <div className="sky__scrim" />
-
-      {/* Everything below is positioned in the band's own 232px coordinates —
-          horizon at 186, city labels at 52 — so it sits in a frame pushed clear
-          of whatever the phone hides at the top. Only the colour layers and the
-          scrim above fill the whole band and run up under the island. */}
+      {/* Everything below is positioned in the band's own coordinates — horizon
+          at 186, the cities on the ground beneath it — so it sits in a frame
+          pushed clear of whatever the phone hides at the top. Only the colour
+          layers fill the whole band and run up under the island. */}
       {/* Outside the frame on purpose: the field is measured in percentages of
           the sky rather than in band pixels, so it fills right up under a
           phone's island instead of stopping at a line across the top. */}
@@ -196,7 +194,7 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
             circle here would come out an ellipse. */}
         <svg
           className="sky__arc"
-          viewBox="0 0 100 232"
+          viewBox={`0 0 100 ${BAND_HEIGHT}`}
           preserveAspectRatio="none"
           fill="none"
           aria-hidden="true"
@@ -236,7 +234,7 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
               vectorEffect="non-scaling-stroke"
             />
           ))}
-        <line x1="0" y1="186" x2="100" y2="186" stroke={row.text.horizon} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        <line x1="0" y1={HORIZON} x2="100" y2={HORIZON} stroke={row.text.horizon} strokeWidth="1" vectorEffect="non-scaling-stroke" />
         </svg>
 
         {row.starOpacity > 0.05 && (
@@ -283,10 +281,15 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
         <WeatherLayer condition={conditionOf(leftCity)} city={leftCity} side="left" isDay={row.isDay} />
       <WeatherLayer condition={conditionOf(rightCity)} city={rightCity} side="right" isDay={row.isDay} />
 
-      <div className="sky__cities">
+      {/* Land: a wash that settles the ground below the horizon, and the hem
+          that dissolves it into the page. Both sit above the sun, so a sun just
+          under the horizon glows through the ground instead of over it. */}
+      <div className="sky__ground" />
+        <div className="sky__cities">
           {column(leftCity, 'left')}
           {column(rightCity, 'right')}
         </div>
+        <div className="sky__hem" />
       </div>
     </div>
   );

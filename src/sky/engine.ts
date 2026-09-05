@@ -21,8 +21,15 @@ export const SLOT_MS = 5 * 60 * 1000;
 export const SLOTS = 288; // one day in five-minute steps
 
 // Band geometry, taken from the design prototype.
-export const BAND_HEIGHT = 232;
-const HORIZON = 186;
+/**
+ * The sky is drawn from the top of the band down to HORIZON; everything below
+ * it is ground, and the ground is where the two cities are written. The band is
+ * taller than the prototype's because that shelf has to hold them: it used to
+ * cost nothing because the names floated in the sky, over a scrim that dimmed
+ * the sky to make them legible. Land under a horizon needs no scrim.
+ */
+export const BAND_HEIGHT = 278;
+export const HORIZON = 186;
 const APEX = 112;
 /**
  * The altitude that reaches the top of the band.
