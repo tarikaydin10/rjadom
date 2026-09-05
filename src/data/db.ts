@@ -1,4 +1,4 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import { deleteDB, openDB, type DBSchema, type IDBPDatabase } from 'idb';
 
 /**
  * Local store. This is the app's source of truth — not a cache of the server.
@@ -42,26 +42,85 @@ export interface OutboxItem {
   lastError: string | null;
 }
 
-interface RjadomDB extends DBSchema {
+interface RyadomDB extends DBSchema {
   answers: { key: string; value: AnswerRecord; indexes: { 'by-date': string } };
   partner: { key: string; value: PartnerState };
   outbox: { key: number; value: OutboxItem };
   kv: { key: string; value: unknown };
 }
 
-let dbPromise: Promise<IDBPDatabase<RjadomDB>> | null = null;
+let dbPromise: Promise<IDBPDatabase<RyadomDB>> | null = null;
 
-export function db(): Promise<IDBPDatabase<RjadomDB>> {
-  dbPromise ??= openDB<RjadomDB>('rjadom', 1, {
-    upgrade(database) {
-      const answers = database.createObjectStore('answers', { keyPath: 'id' });
-      answers.createIndex('by-date', 'date');
-      database.createObjectStore('partner', { keyPath: 'date' });
-      database.createObjectStore('outbox', { keyPath: 'id', autoIncrement: true });
-      database.createObjectStore('kv');
-    },
-  });
+const STORES = ['answers', 'partner', 'outbox', 'kv'] as const;
+
+function create(database: IDBPDatabase<RyadomDB>): void {
+  const answers = database.createObjectStore('answers', { keyPath: 'id' });
+  answers.createIndex('by-date', 'date');
+  database.createObjectStore('partner', { keyPath: 'date' });
+  database.createObjectStore('outbox', { keyPath: 'id', autoIncrement: true });
+  database.createObjectStore('kv');
+}
+
+export function db(): Promise<IDBPDatabase<RyadomDB>> {
+  dbPromise ??= open();
   return dbPromise;
+}
+
+async function open(): Promise<IDBPDatabase<RyadomDB>> {
+  const database = await openDB<RyadomDB>('ryadom', 1, { upgrade: create });
+  await carryOver(database);
+  return database;
+}
+
+/**
+ * The store this app kept before it was renamed.
+ *
+ * A database cannot be renamed, only copied, and what is in here is the part of
+ * the rename that would actually hurt to lose: the answers already written, and
+ * the outbox — an answer typed on a train, queued, and not yet acknowledged by
+ * the server. Losing that is losing something somebody wrote to somebody else.
+ *
+ * Only ever runs into an empty store, and deletes the old one when it is done,
+ * so it cannot copy twice and cannot walk over anything written since. See
+ * `carry-over.ts` for the same step on the `localStorage` side.
+ */
+async function carryOver(database: IDBPDatabase<RyadomDB>): Promise<void> {
+  try {
+    const counts = await Promise.all(STORES.map((store) => database.count(store)));
+    if (counts.some((count) => count > 0)) return;
+
+    // Opening at version 1 with an upgrade that creates nothing is how "does
+    // this exist?" is asked without `indexedDB.databases()`, which not every
+    // browser this runs on has: a database that was not there arrives with no
+    // stores in it, and is thrown away again.
+    const old = await openDB('rjadom', 1, { upgrade: () => {} });
+    if (old.objectStoreNames.length === 0) {
+      old.close();
+      await deleteDB('rjadom');
+      return;
+    }
+
+    for (const name of STORES) {
+      if (!old.objectStoreNames.contains(name)) continue;
+      const values = await old.getAll(name);
+      if (values.length === 0) continue;
+      // `kv` is the one store keyed from outside the record, so its keys have
+      // to travel beside the values rather than inside them.
+      const keys = old.transaction(name).store.keyPath === null ? await old.getAllKeys(name) : null;
+      const tx = (database as unknown as IDBPDatabase).transaction(name, 'readwrite');
+      for (let i = 0; i < values.length; i++) {
+        await (keys ? tx.store.put(values[i], keys[i]) : tx.store.put(values[i]));
+      }
+      await tx.done;
+    }
+
+    old.close();
+    await deleteDB('rjadom');
+  } catch {
+    // A failed carry-over leaves the old database where it is and the new one
+    // empty, which is recoverable — the server still has the answers. Refusing
+    // to open the app over it would not be.
+  }
 }
 
 export async function kvGet<T>(key: string): Promise<T | undefined> {

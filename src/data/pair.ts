@@ -14,7 +14,7 @@
  * phone in their hand.
  */
 
-const STORAGE_KEY = 'rjadom.pair';
+const STORAGE_KEY = 'ryadom.pair';
 
 export type PairMember = 'a' | 'b';
 

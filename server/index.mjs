@@ -1,5 +1,5 @@
 /**
- * Rjadom — reference sync server.
+ * Ryadom — reference sync server.
  *
  * Deliberately dependency-free Node: nothing to audit, nothing to update, and it
  * runs on any VPS with a Node runtime. It also serves the built app from ../dist
@@ -485,4 +485,4 @@ const server = createServer(async (req, res) => {
 });
 
 await loadStore();
-server.listen(PORT, HOST, () => console.log(`rjadom server on ${HOST}:${PORT}`));
+server.listen(PORT, HOST, () => console.log(`ryadom server on ${HOST}:${PORT}`));

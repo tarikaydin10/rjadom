@@ -9,7 +9,7 @@
  * is a fact about whether the person holding this phone has done the gesture
  * yet, not a preference the two of them share.
  */
-const PREFIX = 'rjadom.learned.';
+const PREFIX = 'ryadom.learned.';
 
 /** The scrub gesture on the sky band. */
 export const SCRUB = 'scrub';

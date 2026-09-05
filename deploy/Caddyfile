@@ -5,7 +5,7 @@
 # therefore one origin: one hostname that has to stay reachable, no CORS, no
 # third-party host in the path.
 
-rjadom.example.com {
+ryadom.example.com {
 	encode zstd gzip
 
 	# The application sets its own Content-Security-Policy and cache headers;

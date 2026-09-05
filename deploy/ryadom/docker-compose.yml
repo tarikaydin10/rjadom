@@ -1,25 +1,25 @@
-# Rjadom as its own project: own directory, own data, own lifecycle.
+# Ryadom as its own project: own directory, own data, own lifecycle.
 #
 # No image is built and nothing is pulled from a registry beyond the official
 # Node base image. The server has no dependencies at all, so the code is simply
 # mounted read-only and run — which keeps the property that a broken package
 # registry can never take the running app down.
 #
-#   cd /srv/rjadom && docker compose up -d
-name: rjadom
+#   cd /srv/ryadom && docker compose up -d
+name: ryadom
 
 services:
   app:
     image: node:22-alpine
-    container_name: rjadom
+    container_name: ryadom
     restart: unless-stopped
     command: node /app/server/index.mjs
     working_dir: /app
     # Not root, and deliberately not the deploy user either. Set these in
-    # /srv/rjadom/.env from a dedicated service account — if this ran as the
+    # /srv/ryadom/.env from a dedicated service account — if this ran as the
     # same UID that the deploy key logs in as, a leaked deploy key would also
     # own the app's data directory. Compose fails loudly rather than guessing.
-    user: "${RJADOM_UID:?set RJADOM_UID in /srv/rjadom/.env}:${RJADOM_GID:?set RJADOM_GID in /srv/rjadom/.env}"
+    user: "${RYADOM_UID:?set RYADOM_UID in /srv/ryadom/.env}:${RYADOM_GID:?set RYADOM_GID in /srv/ryadom/.env}"
     environment:
       # Inside a container this must be 0.0.0.0 — loopback here would mean
       # "reachable by nobody", including the proxy. Only the edge network can
@@ -33,12 +33,12 @@ services:
     # Docker reads this file itself, as root, and passes the values in; the
     # container user never needs access to it, so do not widen it for them.
     env_file:
-      - /etc/rjadom.env
+      - /etc/ryadom.env
     volumes:
       # What the deploy writes: the built app and the one server file.
-      - /srv/rjadom/app:/app:ro
+      - /srv/ryadom/app:/app:ro
       # What must survive every deploy: your answers.
-      - /var/lib/rjadom:/data
+      - /var/lib/ryadom:/data
     networks:
       - edge
     healthcheck:

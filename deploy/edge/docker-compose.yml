@@ -6,7 +6,7 @@
 # no other application is touched.
 #
 # The point of the arrangement: what has to keep working must not depend on what
-# gets torn down and rebuilt. Rjadom keeps running when a test stack is deleted,
+# gets torn down and rebuilt. Ryadom keeps running when a test stack is deleted,
 # and a test stack can be deleted without a thought.
 #
 #   cd /srv/edge && docker compose up -d

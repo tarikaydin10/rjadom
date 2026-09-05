@@ -1,5 +1,5 @@
 {
-  "name": "rjadom",
+  "name": "ryadom",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -28,5 +28,5 @@
     "vite": "^8.2.2",
     "vite-plugin-pwa": "^1.3.0"
   },
-  "description": "Rjadom (Рядом) — a private two-person PWA for Hamburg and Kaliningrad."
+  "description": "Ryadom (Рядом) — a private two-person PWA for Hamburg and Kaliningrad."
 }

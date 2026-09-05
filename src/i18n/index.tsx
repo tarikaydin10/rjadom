@@ -5,7 +5,7 @@ import { DICTIONARIES, type Locale, type Plural, type Strings } from './strings'
 export type { Locale };
 export type LocalePreference = Locale | 'system';
 
-const STORAGE_KEY = 'rjadom.locale';
+const STORAGE_KEY = 'ryadom.locale';
 
 /**
  * System language decides: Russian if the device asks for Russian, English

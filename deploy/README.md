@@ -1,6 +1,6 @@
 # Deployment
 
-Zwei Varianten. Nimm **A**, wenn Rjadom allein auf einer Maschine läuft. Nimm
+Zwei Varianten. Nimm **A**, wenn Ryadom allein auf einer Maschine läuft. Nimm
 **B**, wenn auf dem Server schon etwas anderes die Ports 80/443 hat.
 
 Gemeinsam ist beiden: gebaut wird in der CI, auf den Server gehen nur `dist/`
@@ -10,48 +10,48 @@ und **eine einzige Server-Datei ohne Abhängigkeiten** — zusammen rund 1 MB,
 deshalb nie umwerfen, nur eine neue Version verhindern.
 
 ```
-/srv/rjadom/app/dist/            ← das gebaute Frontend
-/srv/rjadom/app/server/index.mjs ← der Server, ohne Abhängigkeiten
-/var/lib/rjadom/                 ← eure Antworten, außerhalb des Deploy-Pfads
-/etc/rjadom.env                  ← PAIR_SECRET, nur hier
+/srv/ryadom/app/dist/            ← das gebaute Frontend
+/srv/ryadom/app/server/index.mjs ← der Server, ohne Abhängigkeiten
+/var/lib/ryadom/                 ← eure Antworten, außerhalb des Deploy-Pfads
+/etc/ryadom.env                  ← PAIR_SECRET, nur hier
 ```
 
-Die Trennung ist Absicht: ein Deploy überschreibt `/srv/rjadom/app` vollständig
-und kann `/var/lib/rjadom` nicht anfassen.
+Die Trennung ist Absicht: ein Deploy überschreibt `/srv/ryadom/app` vollständig
+und kann `/var/lib/ryadom` nicht anfassen.
 
 ---
 
-# Variante A · Rjadom allein auf dem Server
+# Variante A · Ryadom allein auf dem Server
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt-get install -y nodejs caddy rsync
 
-adduser --system --group --no-create-home --shell /usr/sbin/nologin rjadom
+adduser --system --group --no-create-home --shell /usr/sbin/nologin ryadom
 adduser --disabled-password --gecos "" deploy
 
-mkdir -p /srv/rjadom/app/dist /srv/rjadom/app/server /var/lib/rjadom
-chown -R deploy:deploy /srv/rjadom
-chown -R rjadom:rjadom /var/lib/rjadom && chmod 750 /var/lib/rjadom
+mkdir -p /srv/ryadom/app/dist /srv/ryadom/app/server /var/lib/ryadom
+chown -R deploy:deploy /srv/ryadom
+chown -R ryadom:ryadom /var/lib/ryadom && chmod 750 /var/lib/ryadom
 
 # Die Passphrase. Steht nur hier — nie im Repository, nie im Build, nie in der CI.
 node -e "console.log('PAIR_SECRET=' + require('crypto').randomBytes(24).toString('base64url'))" \
-  > /etc/rjadom.env
-chmod 600 /etc/rjadom.env
-cat /etc/rjadom.env    # diesen Wert einmal auf jedem der beiden Telefone eingeben
+  > /etc/ryadom.env
+chmod 600 /etc/ryadom.env
+cat /etc/ryadom.env    # diesen Wert einmal auf jedem der beiden Telefone eingeben
 
-cp deploy/rjadom.service /etc/systemd/system/
-systemctl daemon-reload && systemctl enable rjadom
+cp deploy/ryadom.service /etc/systemd/system/
+systemctl daemon-reload && systemctl enable ryadom
 
 cp deploy/Caddyfile /etc/caddy/Caddyfile   # Domain eintragen
 systemctl reload caddy
 
-echo 'deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart rjadom' > /etc/sudoers.d/rjadom
-chmod 440 /etc/sudoers.d/rjadom && visudo -c
+echo 'deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart ryadom' > /etc/sudoers.d/ryadom
+chmod 440 /etc/sudoers.d/ryadom && visudo -c
 ```
 
 In GitHub zusätzlich die Variable `RESTART_COMMAND` auf
-`sudo /usr/bin/systemctl restart rjadom` setzen. Weiter bei
+`sudo /usr/bin/systemctl restart ryadom` setzen. Weiter bei
 [GitHub konfigurieren](#github-konfigurieren).
 
 ---
@@ -66,12 +66,12 @@ Ein Caddy vorne, dahinter jede Anwendung als eigenes Projekt:
                     │  /srv/edge/conf.d/   │   neue Site = Datei + reload
                     └───┬──────────────┬───┘
                         │              │
-                    rjadom          irgendwas anderes
+                    ryadom          irgendwas anderes
                  (eigenes Projekt)   (jederzeit wegwerfbar)
 ```
 
 Der Punkt dieser Anordnung: **was verlässlich laufen muss, darf nicht von dem
-abhängen, was ständig neu gebaut wird.** Rjadom läuft weiter, wenn du eine
+abhängen, was ständig neu gebaut wird.** Ryadom läuft weiter, wenn du eine
 Testumgebung daneben löschst — und du kannst sie ohne Nachdenken löschen.
 
 ## B1 · Den Türsteher aufsetzen
@@ -79,7 +79,7 @@ Testumgebung daneben löschst — und du kannst sie ohne Nachdenken löschen.
 Noch nicht starten — die Ports sind ja belegt.
 
 ```bash
-mkdir -p /srv/edge/conf.d /srv/rjadom/app/dist /srv/rjadom/app/server /var/lib/rjadom
+mkdir -p /srv/edge/conf.d /srv/ryadom/app/dist /srv/ryadom/app/server /var/lib/ryadom
 cp deploy/edge/docker-compose.yml /srv/edge/
 cp deploy/edge/Caddyfile /srv/edge/          # E-Mail-Adresse eintragen
 
@@ -87,17 +87,17 @@ cp deploy/edge/Caddyfile /srv/edge/          # E-Mail-Adresse eintragen
 # unter dem der Deploy einloggt. Sonst gehörte einem geleakten Deploy-Key auch
 # gleich das Datenverzeichnis. `adduser deploy` bekommt auf einem frischen
 # Ubuntu UID 1000; deshalb hier nie 1000 fest verdrahten.
-adduser --system --group --no-create-home --shell /usr/sbin/nologin rjadomsvc
-printf 'RJADOM_UID=%s\nRJADOM_GID=%s\n' "$(id -u rjadomsvc)" "$(id -g rjadomsvc)" \
-  > /srv/rjadom/.env
-chown -R rjadomsvc:rjadomsvc /var/lib/rjadom && chmod 750 /var/lib/rjadom
+adduser --system --group --no-create-home --shell /usr/sbin/nologin ryadomsvc
+printf 'RYADOM_UID=%s\nRYADOM_GID=%s\n' "$(id -u ryadomsvc)" "$(id -g ryadomsvc)" \
+  > /srv/ryadom/.env
+chown -R ryadomsvc:ryadomsvc /var/lib/ryadom && chmod 750 /var/lib/ryadom
 
 # Die Passphrase liest Docker selbst, als root, und reicht sie in den Container.
 # Der Container-Benutzer braucht die Datei nie — also gehört sie root allein.
 node -e "console.log('PAIR_SECRET=' + require('crypto').randomBytes(24).toString('base64url'))" \
-  > /etc/rjadom.env
-chown root:root /etc/rjadom.env && chmod 600 /etc/rjadom.env
-cat /etc/rjadom.env
+  > /etc/ryadom.env
+chown root:root /etc/ryadom.env && chmod 600 /etc/ryadom.env
+cat /etc/ryadom.env
 ```
 
 > **Zertifikate mitnehmen.** Hat der bisherige Proxy schon Let's-Encrypt-Zertifikate,
@@ -137,22 +137,22 @@ alte-domain.de {
 
 Sein eigenes TLS entfällt damit — das macht jetzt der Türsteher.
 
-## B3 · Rjadom starten
+## B3 · Ryadom starten
 
 ```bash
-cp deploy/rjadom/docker-compose.yml /srv/rjadom/
-cp deploy/rjadom/rjadom.caddy /srv/edge/conf.d/    # Domain eintragen
+cp deploy/ryadom/docker-compose.yml /srv/ryadom/
+cp deploy/ryadom/ryadom.caddy /srv/edge/conf.d/    # Domain eintragen
 
 cd /srv/edge   && docker compose up -d     # ab jetzt hört der Türsteher
-cd /srv/rjadom && docker compose up -d
+cd /srv/ryadom && docker compose up -d
 ```
 
 Beim ersten Mal ist `app/` noch leer und der Container startet in eine
 Neustartschleife — das ist erwartet und erledigt sich mit dem ersten Deploy.
 
 ```bash
-echo 'deploy ALL=(root) NOPASSWD: /usr/bin/docker restart rjadom' > /etc/sudoers.d/rjadom
-chmod 440 /etc/sudoers.d/rjadom && visudo -c
+echo 'deploy ALL=(root) NOPASSWD: /usr/bin/docker restart ryadom' > /etc/sudoers.d/ryadom
+chmod 440 /etc/sudoers.d/ryadom && visudo -c
 ```
 
 Bewusst **kein** `usermod -aG docker deploy`: Mitglied der docker-Gruppe zu sein
@@ -196,7 +196,7 @@ sein.
 
 | Typ | Name | Wert |
 |---|---|---|
-| Secret | `SSH_PRIVATE_KEY_B64` | `base64 -w0 ~/.ssh/rjadom_deploy` — **eine** Zeile, nichts kann verlorengehen |
+| Secret | `SSH_PRIVATE_KEY_B64` | `base64 -w0 ~/.ssh/ryadom_deploy` — **eine** Zeile, nichts kann verlorengehen |
 | Secret | `SSH_KNOWN_HOSTS` | Ausgabe von `ssh-keyscan` |
 | Secret | `SSH_HOST` | IP oder Hostname |
 | Secret | `SSH_USER` | `deploy` |
@@ -233,16 +233,16 @@ gepasst hat. Mit einem gemeinsamen Passwort konnte die Seite nur im Header
 behauptet werden — und wer es kannte, konnte sich als die andere Person ausgeben
 und deren Antwort lesen, ohne selbst geschrieben zu haben.
 
-Sie stehen ausschließlich in `/etc/rjadom.env` auf dem Server — nie im Code, nie
+Sie stehen ausschließlich in `/etc/ryadom.env` auf dem Server — nie im Code, nie
 im Repository, nie im Build:
 
 ```bash
-cat > /etc/rjadom.env <<'EOF'
+cat > /etc/ryadom.env <<'EOF'
 PAIR_SECRET_A=passwort-fuer-hamburg
 PAIR_SECRET_B=passwort-fuer-kaliningrad
 EOF
-chown root:root /etc/rjadom.env && chmod 600 /etc/rjadom.env
-cd /srv/rjadom && docker compose up -d --force-recreate
+chown root:root /etc/ryadom.env && chmod 600 /etc/ryadom.env
+cd /srv/ryadom && docker compose up -d --force-recreate
 ```
 
 Danach melden sich beide Telefone einmal neu an: unter „Мы / Us" auf „Dieses
@@ -292,9 +292,9 @@ shred -u /tmp/k /tmp/k.pub
 
 # 2 · Passphrase
 node -e "console.log('PAIR_SECRET=' + require('crypto').randomBytes(24).toString('base64url'))" \
-  > /etc/rjadom.env
-chown root:root /etc/rjadom.env && chmod 600 /etc/rjadom.env
-cd /srv/rjadom && docker compose up -d --force-recreate
+  > /etc/ryadom.env
+chown root:root /etc/ryadom.env && chmod 600 /etc/ryadom.env
+cd /srv/ryadom && docker compose up -d --force-recreate
 ```
 
 Nach Schritt 2 melden sich beide Telefone einmal neu an — unter „Мы / Us" auf
@@ -310,7 +310,7 @@ Notiz-App.
 Alles, was nicht wiederherstellbar ist, liegt an zwei Stellen:
 
 ```bash
-tar czf /root/rjadom-$(date +%F).tar.gz /var/lib/rjadom /etc/rjadom.env
+tar czf /root/ryadom-$(date +%F).tar.gz /var/lib/ryadom /etc/ryadom.env
 ```
 
 ## Erreichbarkeit aus Russland

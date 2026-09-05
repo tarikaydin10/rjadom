@@ -1,32 +1,32 @@
-# /etc/systemd/system/rjadom.service
+# /etc/systemd/system/ryadom.service
 #
-# The alternative to the container setup in deploy/rjadom/: use this when Rjadom
+# The alternative to the container setup in deploy/ryadom/: use this when Ryadom
 # is the only thing on the machine and Caddy can own :80 and :443 directly.
-# Both shapes read the same /srv/rjadom/app layout, so the deploy workflow is
+# Both shapes read the same /srv/ryadom/app layout, so the deploy workflow is
 # identical apart from the restart command (see RESTART_COMMAND).
 [Unit]
-Description=Rjadom
-Documentation=https://github.com/tarikaydin10/rjadom
+Description=Ryadom
+Documentation=https://github.com/tarikaydin10/ryadom
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=rjadom
-Group=rjadom
-WorkingDirectory=/srv/rjadom
-ExecStart=/usr/bin/node /srv/rjadom/app/server/index.mjs
+User=ryadom
+Group=ryadom
+WorkingDirectory=/srv/ryadom
+ExecStart=/usr/bin/node /srv/ryadom/app/server/index.mjs
 Restart=on-failure
 RestartSec=2
 
 Environment=NODE_ENV=production
 Environment=PORT=8787
 Environment=HOST=127.0.0.1
-Environment=STATIC_DIR=/srv/rjadom/app/dist
+Environment=STATIC_DIR=/srv/ryadom/app/dist
 # Outside the deploy directory, so a deploy can never delete your answers.
-Environment=DATA_DIR=/var/lib/rjadom
+Environment=DATA_DIR=/var/lib/ryadom
 # Holds PAIR_SECRET=... — root-owned, chmod 600. Never in the repository.
-EnvironmentFile=/etc/rjadom.env
+EnvironmentFile=/etc/ryadom.env
 
 # The process reads one directory, writes one directory, and answers on one
 # loopback port. Nothing else needs to be available to it.
@@ -41,7 +41,7 @@ ProtectControlGroups=true
 RestrictAddressFamilies=AF_INET AF_INET6
 RestrictNamespaces=true
 LockPersonality=true
-ReadWritePaths=/var/lib/rjadom
+ReadWritePaths=/var/lib/ryadom
 MemoryMax=256M
 
 [Install]

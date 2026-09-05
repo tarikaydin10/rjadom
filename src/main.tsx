@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { I18nProvider } from './i18n';
 import { SettingsProvider } from './data/settings-context';
+import { carryOverStorage } from './data/carry-over';
 import './styles.css';
 
 /**
@@ -67,6 +68,10 @@ function keepFresh(): void {
 }
 
 keepFresh();
+
+// Before the first render, because the passphrase and the language are both
+// read while it is being built.
+carryOverStorage();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('missing #root');

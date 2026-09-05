@@ -1,9 +1,9 @@
-# Copy to /srv/edge/conf.d/rjadom.caddy and put your own domain in front.
+# Copy to /srv/edge/conf.d/ryadom.caddy and put your own domain in front.
 #
-# `rjadom` resolves to the container by name on the shared edge network, so
+# `ryadom` resolves to the container by name on the shared edge network, so
 # nothing is published to the host and the app is reachable only through here.
 
-rjadom.example.com {
+ryadom.example.com {
 	encode zstd gzip
 
 	header {
@@ -11,7 +11,7 @@ rjadom.example.com {
 		-Server
 	}
 
-	reverse_proxy rjadom:8787
+	reverse_proxy ryadom:8787
 
 	log {
 		# A private page for two people; there is no reason to record when each

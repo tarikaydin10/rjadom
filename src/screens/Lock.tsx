@@ -72,7 +72,7 @@ export function Lock({ onUnlocked }: { onUnlocked(): void }) {
         ))}
       </div>
 
-      <h1 className="screen__title">Rjadom · Рядом</h1>
+      <h1 className="screen__title">Ryadom · Рядом</h1>
       <p className="screen__note" lang={lockLocale}>
         {t('lock.intro')}
       </p>

@@ -9,7 +9,7 @@ import { dateKey } from '../lib/day';
  * A name, optionally written twice.
  *
  * Names are never translated — but a name can legitimately have two spellings,
- * the way the app itself is both Rjadom and Рядом. Whichever spelling matches
+ * the way the app itself is both Ryadom and Рядом. Whichever spelling matches
  * the interface language is shown; if only one exists, that one is shown in both
  * languages. Both bundled fonts carry Latin and Cyrillic, so neither spelling
  * ever drops to a system fallback.

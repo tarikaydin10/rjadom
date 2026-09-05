@@ -23,8 +23,8 @@ export default defineConfig({
       includeAssets: ['fonts/*.woff2', 'icons/*.png'],
       manifest: {
         id: '/',
-        name: 'Rjadom · Рядом',
-        short_name: 'Rjadom',
+        name: 'Ryadom · Рядом',
+        short_name: 'Ryadom',
         description: 'Two people, two cities, one sky.',
         start_url: '/',
         scope: '/',
@@ -50,7 +50,7 @@ export default defineConfig({
             urlPattern: new RegExp('^' + weatherBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/'),
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'rjadom-weather',
+              cacheName: 'ryadom-weather',
               networkTimeoutSeconds: 6,
               expiration: { maxEntries: 16, maxAgeSeconds: 60 * 60 * 24 * 3 },
               cacheableResponse: { statuses: [0, 200] },

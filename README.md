@@ -1,4 +1,4 @@
-# Rjadom · Рядом
+# Ryadom · Рядом
 
 Eine private PWA für zwei Menschen in Hamburg und Kaliningrad: ein astronomisch
 korrekter Himmel über beiden Städten, die Frage des Tages mit Lock-In, und der
@@ -64,9 +64,9 @@ Weitere Skripte: `npm run typecheck`, `npm run icons` (App-Icons neu zeichnen),
 
 ## Die fünf Anforderungen
 
-### 1 · Die App heißt Rjadom (Рядом)
+### 1 · Die App heißt Ryadom (Рядом)
 
-Der Name steht im Manifest als `Rjadom · Рядом`, in `index.html` und auf dem
+Der Name steht im Manifest als `Ryadom · Рядом`, in `index.html` und auf dem
 Sperrbildschirm. Ein Eigenname wird nicht übersetzt — er wird transliteriert, und
 beide Schreibungen stehen nebeneinander.
 
@@ -224,7 +224,7 @@ laufende App nie umwerfen, nur eine neue Version verhindern.
 
 Zwei Varianten, beide in `deploy/README.md`:
 
-**A — Rjadom allein auf dem Server.** Caddy auf dem Host, der Node-Prozess als
+**A — Ryadom allein auf dem Server.** Caddy auf dem Host, der Node-Prozess als
 systemd-Dienst auf Loopback:
 
 ```
@@ -239,8 +239,8 @@ dem abhängen, was ständig neu gebaut wird.
 
 Nach außen spricht in beiden Fällen nur Caddy; der Node-Prozess ist nie direkt
 erreichbar. `DATA_DIR` liegt bewusst außerhalb des Deploy-Verzeichnisses
-(`/var/lib/rjadom`), damit ein Deploy eure Antworten nicht anfassen kann. Die
-Passphrase steht nur in `/etc/rjadom.env` auf dem Server — nie im Repository,
+(`/var/lib/ryadom`), damit ein Deploy eure Antworten nicht anfassen kann. Die
+Passphrase steht nur in `/etc/ryadom.env` auf dem Server — nie im Repository,
 nie im Build, nie in der CI.
 
 Der Health-Check nach jedem Deploy prüft genau zwei Dinge: `GET /` muss **200**
