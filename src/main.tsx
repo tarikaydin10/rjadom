@@ -4,7 +4,6 @@ import { App } from './App';
 import { I18nProvider } from './i18n';
 import { SettingsProvider } from './data/settings-context';
 import { carryOverStorage } from './data/carry-over';
-import { holdTheBottomEdge } from './lib/viewport';
 import './styles.css';
 
 /**
@@ -69,7 +68,6 @@ function keepFresh(): void {
 }
 
 keepFresh();
-holdTheBottomEdge();
 
 // Before the first render, because the passphrase and the language are both
 // read while it is being built.
