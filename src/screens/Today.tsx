@@ -13,7 +13,7 @@ import { questionFor } from '../content/questions';
 import { displayName, sidesFor } from '../data/settings';
 import { getPair } from '../data/pair';
 import { loadDay, saveMyAnswer, type DayAnswers } from '../data/answers';
-import { dayAndMonth, timeOfDay } from '../lib/format';
+
 import { subscribeSync } from '../data/sync';
 
 const EMPTY_DAY: DayAnswers = { mine: null, theirs: null, partner: null };
@@ -53,7 +53,22 @@ export function Today() {
   const shownMs = scrubMs ?? now;
   const table = skyDay(shownMs);
   const row = table.rows[slotOf(shownMs)] ?? table.rows[0]!;
-  const scrubbedToAnotherDay = scrubMs !== null && dateKey(shownMs) !== today;
+
+  const member = getPair()?.member ?? 'a';
+  const sides = sidesFor(member, settings);
+  const yourCity = sides.yours;
+  const partnerName = displayName(sides.partnerName, locale);
+
+  // Sync the top of the sky gradient to the app background so overscrolling up reveals the sky.
+  useEffect(() => {
+    const topColorMatch = row.sky[yourCity].match(/#[\da-fA-F]+/i);
+    const app = document.querySelector('.app') as HTMLElement;
+    if (topColorMatch && app) {
+      const topColor = topColorMatch[0];
+      app.style.background = `linear-gradient(180deg, ${topColor} 0%, ${topColor} 50%, var(--paper) 50%, var(--paper) 100%)`;
+      return () => { app.style.background = ''; };
+    }
+  }, [row.sky, yourCity]);
 
   const scrubTo = (ms: number) => {
     cancelRewind();
@@ -107,13 +122,6 @@ export function Today() {
 
   useEffect(() => cancelRewind, []);
 
-  // Layout is geographic and identical on both devices; only the wording below
-  // depends on which side of the sky the reader is standing on — and that comes
-  // from the side chosen at unlock, so it cannot drift.
-  const member = getPair()?.member ?? 'a';
-  const sides = sidesFor(member, settings);
-  const yourCity = sides.yours;
-  const partnerName = displayName(sides.partnerName, locale);
 
   const onSave = (text: string) => {
     setSaving(true);

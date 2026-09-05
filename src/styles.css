@@ -381,7 +381,7 @@ textarea {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(74, 56, 42, 0.26) 0%, rgba(74, 56, 42, 0.17) 46%, rgba(74, 56, 42, 0.1) 100%);
+  background: linear-gradient(180deg, rgba(74, 56, 42, 0) 0%, rgba(74, 56, 42, 0.26) 30%, rgba(74, 56, 42, 0.1) 100%);
   pointer-events: none;
 }
 
