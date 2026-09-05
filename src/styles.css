@@ -23,12 +23,9 @@
   --gutter: 22px;
   --radius-card: 14px;
 
-  /* Die Höhe der Tab-Leiste, über dem Inset, das sich das Telefon selbst nimmt.
-     Einmal benannt, weil zwei Regeln dieselbe Zahl brauchen: die Leiste als ihr
-     Minimum, die Shell als den Streifen, in den kein Screen hineinschreiben
-     darf. Vorher standen dort zwei handgepflegte Kopien, und genau ihr
-     Auseinanderdriften ist der Abstand, der unter der Leiste sichtbar wurde. */
-  --tabbar-height: 36px;
+  /* Die dynamische Höhe der Tab-Leiste: 38px im Browser (Safari), aber im PWA-Modus
+     wird sie nur so hoch wie nötig (24px + Safe Area), damit sie nicht wuchtig wirkt. */
+  --tabbar-height: max(38px, calc(24px + var(--safe-bottom)));
 
   /* --band-height and --horizon are deliberately absent here. They are the
      band's own geometry, they belong to sky/engine.ts, which draws the sun and
@@ -125,7 +122,7 @@ textarea {
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
   /* Der Streifen, in dem die Leiste steht. Kein Screen schreibt hier hinein. */
-  padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom));
+  padding-bottom: var(--tabbar-height);
 }
 
 .kicker {
@@ -1146,10 +1143,8 @@ textarea {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
-  /* Genau der Streifen, den die Shell reserviert hat, plus das, was sich das
-     Telefon darunter selbst nimmt: das Band des Home-Indicators gehört der
-     Leiste, in der Farbe der Leiste — es ist kein Abstand unter ihr. */
-  min-height: calc(var(--tabbar-height) + var(--safe-bottom));
+  box-sizing: border-box;
+  height: var(--tabbar-height);
   padding: 0 0 var(--safe-bottom);
   background: var(--card);
   box-shadow: 0 -1px 0 var(--border), 0 -10px 18px -12px rgba(74, 56, 42, 0.16);
