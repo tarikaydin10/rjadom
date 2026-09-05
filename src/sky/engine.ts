@@ -137,6 +137,8 @@ export interface SkyRow {
     illuminated: number;
     /** True while the moon is filling up, which decides the side the light is on. */
     waxing: boolean;
+    /** Degrees to turn the lit limb so it faces the sun. */
+    tilt: number;
   };
   starOpacity: number;
   /** True when the brighter city is in daylight — flips the text to dark ink. */
@@ -256,6 +258,33 @@ function eventsFor(dayStart: number, cityId: CityId): SunEvent {
   };
 }
 
+/**
+ * Which way the moon's lit edge points: at the sun.
+ *
+ * Taken from the angle between the two bodies in the sky, not from where they
+ * ended up being drawn. Drawn positions are clamped at the band edges and jump
+ * from one side to the other when a body passes due north, and reading the
+ * direction off them made the moon flip over in an instant around solar
+ * midnight. An angular difference, normalised once, moves smoothly through that.
+ *
+ * The band compresses the two axes differently — 62% of the width per 180° of
+ * azimuth against 74px per 66° of altitude — so the difference is converted to
+ * the band's own proportions before the angle is taken, or the crescent would
+ * lean wrongly. Widths vary by phone; only the ratio matters here.
+ */
+const PX_PER_AZIMUTH_DEGREE = (0.62 * 393) / 180;
+const PX_PER_ALTITUDE_DEGREE = (HORIZON - APEX) / MAX_ALT;
+
+function limbTilt(sunAlt: number, sunAz: number, moonAlt: number, moonAz: number): number {
+  // Normalised to ±180 so passing north is a small step, not a full turn.
+  const deltaAzimuth = ((((southOffset(sunAz) - southOffset(moonAz)) % 360) + 540) % 360) - 180;
+  // East is on the right in the band, and screen y grows downward: both flip.
+  const dx = -deltaAzimuth * PX_PER_AZIMUTH_DEGREE;
+  const dy = -(sunAlt - moonAlt) * PX_PER_ALTITUDE_DEGREE;
+  if (dx === 0 && dy === 0) return 0;
+  return (Math.atan2(dy, dx) * 180) / Math.PI;
+}
+
 /** Highest of the two cities' sun altitudes at an instant. */
 function brightestAt(ms: number): number {
   const at = new Date(ms);
@@ -319,6 +348,7 @@ export function buildDay(dayStart: number): SkyDay {
         opacity: moonAlt > 0 && bright < 8 ? Math.min(0.9, Math.max(0, (8 - bright) / 14)) : 0,
         illuminated: illumination.fraction,
         waxing: illumination.phase < 0.5,
+        tilt: limbTilt(midAlt, mid.azimuth, moonAlt, moon.azimuth),
       },
       starOpacity: Math.min(1, Math.max(0, (-4 - bright) / 10)),
       isDay,
@@ -387,7 +417,8 @@ export function slotOf(ms: number): number {
  * start on a plane all find the table already built.
  */
 const dayCache = new Map<number, SkyDay>();
-const MAX_CACHED_DAYS = 10;
+// A fortnight either way, which is as far as the band can be wound.
+const MAX_CACHED_DAYS = 32;
 
 export function skyDay(ms: number): SkyDay {
   const key = startOfLocalDay(ms);

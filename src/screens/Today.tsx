@@ -7,13 +7,13 @@ import { useI18n } from '../i18n';
 import { useNow, useOnline, useSyncStatus, useWeather } from '../lib/hooks';
 import { useSettings } from '../data/settings-context';
 import { BAND_ORDER } from '../content/cities';
-import { SLOTS, SLOT_MS, skyDay, slotOf, startOfLocalDay, statusFor } from '../sky/engine';
+import { skyDay, slotOf, statusFor } from '../sky/engine';
 import { dateKey, dayNumber } from '../lib/day';
 import { questionFor } from '../content/questions';
 import { displayName, sidesFor } from '../data/settings';
 import { getPair } from '../data/pair';
 import { loadDay, saveMyAnswer, type DayAnswers } from '../data/answers';
-import { timeOfDay } from '../lib/format';
+import { dayAndMonth, timeOfDay } from '../lib/format';
 import { subscribeSync } from '../data/sync';
 
 const EMPTY_DAY: DayAnswers = { mine: null, theirs: null, partner: null };
@@ -26,8 +26,8 @@ export function Today() {
   const weather = useWeather();
   const sync = useSyncStatus();
 
-  /** Null while the sky follows real time; a slot index while a drag holds it. */
-  const [scrubSlot, setScrubSlot] = useState<number | null>(null);
+  /** Null while the sky follows real time; a moment while a drag holds it. */
+  const [scrubMs, setScrubMs] = useState<number | null>(null);
   const [day, setDay] = useState<DayAnswers>(EMPTY_DAY);
   const [saving, setSaving] = useState(false);
 
@@ -43,10 +43,20 @@ export function Today() {
   // without the user doing anything.
   useEffect(() => subscribeSync(() => refresh()), [refresh]);
 
-  const table = skyDay(now);
-  const slot = scrubSlot ?? slotOf(now);
-  const row = table.rows[Math.min(SLOTS - 1, Math.max(0, slot))] ?? table.rows[0]!;
-  const shownMs = scrubSlot === null ? now : startOfLocalDay(now) + scrubSlot * SLOT_MS;
+  const shownMs = scrubMs ?? now;
+  const table = skyDay(shownMs);
+  const row = table.rows[slotOf(shownMs)] ?? table.rows[0]!;
+  const scrubbedToAnotherDay = scrubMs !== null && dateKey(shownMs) !== today;
+
+  /**
+   * How far the sky can be wound. Sun and moon are arithmetic and would happily
+   * go anywhere; the weather reaches seven days, and past a fortnight this stops
+   * being a gesture and starts being a date picker.
+   */
+  const scrubTo = (ms: number) => {
+    const limit = 14 * 24 * 60 * 60 * 1000;
+    setScrubMs(Math.min(now + limit, Math.max(now - limit, ms)));
+  };
 
   // Layout is geographic and identical on both devices; only the wording below
   // depends on which side of the sky the reader is standing on — and that comes
@@ -82,19 +92,19 @@ export function Today() {
         leftCity={BAND_ORDER.left}
         rightCity={BAND_ORDER.right}
         weather={weather}
-        onScrubTo={setScrubSlot}
+        onScrubTo={scrubTo}
         onScrubEnd={() => undefined}
       />
 
       <div className="status">
         <span className="status__text">{t(`sky.status.${statusFor(row, yourCity)}`)}</span>
-        {scrubSlot === null ? (
+        {scrubMs === null ? (
           <span className="status__now" aria-hidden="true">
             {t('sky.now')}
           </span>
         ) : (
-          <button className="status__now" onClick={() => setScrubSlot(null)}>
-            {`${timeOfDay(shownMs, locale)} · ${t('sky.backToNow')}`}
+          <button className="status__now" onClick={() => setScrubMs(null)}>
+            {`${scrubbedToAnotherDay ? `${dayAndMonth(shownMs, locale)} ` : ''}${timeOfDay(shownMs, locale)} · ${t('sky.backToNow')}`}
           </button>
         )}
       </div>

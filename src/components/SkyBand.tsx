@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { CITIES, type CityId } from '../content/cities';
-import { SLOTS, type SkyDay, type SkyRow } from '../sky/engine';
+import type { SkyDay, SkyRow } from '../sky/engine';
 import { STARS } from '../sky/stars';
 import { MoonDisc } from './MoonDisc';
 import { nextEvent } from '../sky/notes';
@@ -19,16 +19,18 @@ interface Props {
   leftCity: CityId;
   rightCity: CityId;
   weather: WeatherCache | undefined;
-  onScrubTo(slot: number): void;
+  /** Absolute moment to show. Clamped by the caller. */
+  onScrubTo(ms: number): void;
   onScrubEnd(): void;
 }
 
 /** Movement below this is a tap, not a scrub. */
 const DRAG_THRESHOLD_PX = 6;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo, onScrubEnd }: Props) {
   const { t, locale } = useI18n();
-  const drag = useRef<{ x: number; slot: number; width: number; engaged: boolean } | null>(null);
+  const drag = useRef<{ x: number; ms: number; width: number; engaged: boolean } | null>(null);
 
   /**
    * The design's time slider was a demo tool and the handoff says so — in the
@@ -38,8 +40,7 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
    */
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    const startSlot = Math.floor(((ms - startOfDay(ms)) / 86400000) * SLOTS);
-    drag.current = { x: event.clientX, slot: startSlot, width: rect.width, engaged: false };
+    drag.current = { x: event.clientX, ms, width: rect.width, engaged: false };
   };
 
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -53,10 +54,13 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
     }
     // Right is later, always. This gesture replaces the prototype's time slider,
     // so it keeps a slider's convention rather than behaving like a surface being
-    // pushed — dragging forward moves the day forward, whichever way the sun
-    // happens to travel across the band.
-    const slot = Math.round(state.slot + (dx / state.width) * SLOTS);
-    onScrubTo(Math.min(SLOTS - 1, Math.max(0, slot)));
+    // pushed — dragging forward moves time forward, whichever way the sun happens
+    // to travel across the band.
+    //
+    // Continuous rather than clamped to the calendar day: one band width is one
+    // day, and a drag that keeps going keeps going. Stopping dead at midnight
+    // made "what is it like there tomorrow morning" impossible to ask.
+    onScrubTo(state.ms + (dx / state.width) * DAY_MS);
   };
 
   const endDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -167,7 +171,7 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
         size={16}
         illuminated={row.moon.illuminated}
         waxing={row.moon.waxing}
-        tilt={limbTilt(row)}
+        tilt={row.moon.tilt}
         opacity={row.moon.opacity}
         style={{ position: 'absolute', left: `${row.moon.x}%`, top: row.moon.y, margin: '-8px 0 0 -8px' }}
       />
@@ -190,23 +194,4 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
       </div>
     </div>
   );
-}
-
-/**
- * Which way the moon's lit edge points: at the sun, wherever it is drawn.
- *
- * Measured in pixels rather than in the band's mixed units — x is a percentage
- * of the width, y is already pixels — or the angle would be wrong by however
- * wide the phone is.
- */
-function limbTilt(row: SkyRow, bandWidth = 393): number {
-  const dx = ((row.sun.x - row.moon.x) / 100) * bandWidth;
-  const dy = row.sun.y - row.moon.y;
-  if (dx === 0 && dy === 0) return 0;
-  return (Math.atan2(dy, dx) * 180) / Math.PI;
-}
-
-function startOfDay(ms: number): number {
-  const d = new Date(ms);
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
