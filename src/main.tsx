@@ -82,8 +82,13 @@ keepFresh();
  * What works is making iOS measure again: hide the root for one frame and show
  * it. Done only when the viewport really is shorter than the screen — in
  * standalone with viewport-fit=cover the two are the same height — so a page
- * that never lost anything never blinks. Twice, because the keyboard is still
- * animating away when the field loses focus.
+ * that never lost anything never blinks.
+ *
+ * Watched through the visual viewport, not through focus. The keyboard's own
+ * dismiss key leaves the field focused, and a field that unmounts (the
+ * passphrase, on unlock) never blurs at all — neither would have fired. The
+ * visual viewport resizes whenever the keyboard comes or goes; the check runs
+ * once it has been still for a moment, and never while the keyboard is up.
  */
 function healViewport(): void {
   if (!window.matchMedia('(display-mode: standalone)').matches) return;
@@ -95,8 +100,13 @@ function healViewport(): void {
     return viewport < screen - 2;
   };
 
+  const keyboardUp = (): boolean => {
+    const visual = window.visualViewport;
+    return visual !== null && visual.height < window.innerHeight - 80;
+  };
+
   const heal = () => {
-    if (!short()) return;
+    if (keyboardUp() || !short()) return;
     const root = document.getElementById('root');
     if (!root) return;
     const y = window.scrollY;
@@ -106,10 +116,13 @@ function healViewport(): void {
     window.scrollTo(0, y);
   };
 
-  document.addEventListener('focusout', () => {
-    window.setTimeout(heal, 150);
-    window.setTimeout(heal, 600);
-  });
+  let pending = 0;
+  const settle = () => {
+    window.clearTimeout(pending);
+    pending = window.setTimeout(heal, 300);
+  };
+  window.visualViewport?.addEventListener('resize', settle);
+  document.addEventListener('focusout', settle);
 }
 
 healViewport();

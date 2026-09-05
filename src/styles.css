@@ -47,17 +47,17 @@
   box-sizing: border-box;
 }
 
-/* The document scrolls, like any page — deliberately. A frozen shell
-   (`overflow: hidden` here, a `position: fixed` root) is the layout iOS stops
-   re-measuring after the first keyboard: the viewport stayed short for the rest
-   of the session and a strip of bare background sat under the tab bar. With a
-   scrolling document iOS recomputes on every scroll, which is why the same
-   phone never shows it on Trainer. `overscroll-behavior: none` keeps the sky
-   welded to the top edge instead of rubber-banding away from it. */
+/* The document scrolls, like any page, and it rubber-bands, like any page —
+   both deliberately. No `overflow: hidden`, no fixed root, and above all no
+   `overscroll-behavior: none`: iOS maps that onto the scroll view's bounce, and
+   with the bounce off a home-screen app does not re-measure its viewport after
+   the keyboard. It stayed safe-area-inset-top short for the rest of the session
+   and a strip of bare background sat under the tab bar (WebKit 192564, 301857
+   — both name disabled overscroll as the condition). The sky pulling away from
+   the top edge for a moment is the price, and Trainer pays it too. */
 html,
 body {
   margin: 0;
-  overscroll-behavior: none;
   /* Same colour as the tab bar: whatever the shell leaves uncovered at the
      bottom edge reads as bar, not as a seam. */
   background: var(--card);
