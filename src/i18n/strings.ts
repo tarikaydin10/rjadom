@@ -92,6 +92,9 @@ export const en = {
     arrivesSoon: '{name} arrives',
     youTravelSoon: 'You travel to {city}',
     unset: 'No reunion date yet',
+    // The empty slot's own label. An instruction, not a description: with no
+    // date set there is nothing to read here and only something to do.
+    set: 'Set the date',
   },
 
   net: {
@@ -222,6 +225,7 @@ export const ru: DeepStringShape<typeof en> = {
     arrivesSoon: '{name} приезжает',
     youTravelSoon: 'Ты едешь в {city}',
     unset: 'Встреча ещё не назначена',
+    set: 'Назначить дату',
   },
 
   net: {

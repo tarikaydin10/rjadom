@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { CITIES, type CityId } from '../content/cities';
 import type { SkyDay, SkyRow } from '../sky/engine';
@@ -11,6 +11,7 @@ import { conditionKey, observationAt, type WeatherCache } from '../weather/openm
 import { WeatherLayer } from './WeatherLayer';
 import { clock, roundTemp } from '../lib/format';
 import { DAY_MS } from '../lib/day';
+import { hasLearned, markLearned, SCRUB } from '../lib/learned';
 import { useI18n } from '../i18n';
 
 interface Props {
@@ -87,6 +88,7 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo 
   /** The latest position, waiting for a frame. See `onPointerMove`. */
   const pending = useRef<number | null>(null);
   const frame = useRef<number | null>(null);
+  const [learnedScrub, setLearnedScrub] = useState(() => hasLearned(SCRUB));
 
   useEffect(
     () => () => {
@@ -114,6 +116,11 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo 
       if (Math.abs(dx) < DRAG_THRESHOLD_PX) return;
       state.engaged = true;
       event.currentTarget.setPointerCapture(event.pointerId);
+      // Learned by doing. The hint has done its job and never returns.
+      if (!learnedScrub) {
+        markLearned(SCRUB);
+        setLearnedScrub(true);
+      }
     }
     // Right is later, always. This gesture replaces the prototype's time slider,
     // so it keeps a slider's convention rather than behaving like a surface being
@@ -238,6 +245,20 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo 
           across the top. */}
       <div className="sky__field" style={{ opacity: row.starOpacity }}>
         <StarField />
+      </div>
+
+      {/* What the band is: a surface you push sideways to move through the day.
+          Two chevrons either side of a line name that axis; they take the sky's
+          own ink, so they are legible at noon as well as at midnight. Under them,
+          until the gesture has been used once, the sentence that says it in
+          words — after that the mark alone is enough. */}
+      <div className="sky__grip" style={{ color: row.text.secondary, textShadow: row.text.shadow }}>
+        <svg width="58" height="8" viewBox="0 0 58 8" fill="none" aria-hidden="true">
+          <path d="M6 1.2 2 4l4 2.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M11 4h36" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+          <path d="M52 1.2 56 4l-4 2.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        {!learnedScrub && <span className="sky__hint">{t('sky.scrubHint')}</span>}
       </div>
 
       <div className="sky__frame">

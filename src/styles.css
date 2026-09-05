@@ -143,19 +143,52 @@ textarea {
   cursor: grabbing;
 }
 
-/* Subtle drag handle to indicate the sky can be swiped */
-.sky::after {
-  content: '';
+/* The band's own affordance: a surface that moves sideways through the day.
+   It used to be a 32×3 pill in flat white — the iOS grammar for a sheet you
+   pull DOWN, which is the one axis this gesture does not have, and at 10% white
+   it was invisible over a noon sky anyway. The mark names the axis instead, and
+   inherits the sky's ink so it reads at every hour. */
+.sky__grip {
   position: absolute;
-  top: calc(var(--safe-top) + 12px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 32px;
-  height: 3px;
-  border-radius: 1.5px;
-  background: rgba(255, 255, 255, 0.1);
+  top: calc(var(--safe-top) + 9px);
+  left: 0;
+  right: 0;
+  padding: 0 var(--gutter);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  /* The gesture belongs to the band underneath; this is only the sign for it. */
   pointer-events: none;
-  z-index: 10;
+  z-index: 4;
+}
+
+/* The mark is permanent, so it stays quiet. */
+.sky__grip svg {
+  opacity: 0.5;
+}
+
+/* The sentence is temporary, so it may speak up — said once, then never again;
+   see lib/learned.ts. A hint that outstays its welcome is the first thing a
+   reader learns to stop seeing, and one too faint to read was never a hint at
+   all. It inherits the sky's ink and the shadow that keeps that ink legible at
+   any hour. */
+.sky__hint {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-align: center;
+  opacity: 0.88;
+  animation: hint-in 900ms 400ms ease-out both;
+}
+
+@keyframes hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 0.88;
+  }
 }
 
 .sky__layer {
@@ -600,11 +633,21 @@ button.status__now:active {
    the same warm paper, but drawn in the colour every other control on the page
    uses, and with the dashed edge that says a field rather than a finished note.
    It was indistinguishable from her card beside it, and the one thing the
-   screen has to ask for is the one thing it was not asking for. */
+   screen has to ask for is the one thing it was not asking for.
+
+   The whole card is the button — see AnswerPair — so it also answers a press,
+   the way a thing you can touch does. */
 .answer--empty {
   border-style: dashed;
   border-color: rgba(176, 86, 60, 0.45);
   background: linear-gradient(180deg, rgba(232, 168, 124, 0.09), rgba(232, 168, 124, 0.03));
+  align-items: stretch;
+  transition: transform 150ms ease, border-color 150ms ease;
+}
+
+.answer--empty:active {
+  transform: scale(0.985);
+  border-color: var(--terracotta);
 }
 
 /* She has written, and her answer is sitting on this device unread. The card
@@ -649,19 +692,36 @@ button.status__now:active {
   font-style: italic;
 }
 
-/* The placeholder in your own card is a button — the whole card is the way in,
-   and this is the words on it. It should read as the text it will replace, not
-   as a control, so it borrows everything from the paragraph beside it. */
+/* The words in the empty card. They read as the text they will be replaced by,
+   not as a control — the card around them is the control. */
 .answer__prompt {
-  background: none;
-  border: 0;
-  padding: 0;
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  text-align: left;
   color: var(--terracotta);
-  cursor: text;
+}
+
+/* A caret, because a caret is the one mark that means "your words go here" and
+   means nothing else. The dashed border says a field; this says the field is
+   yours, it is empty, and it is waiting. It holds still for anyone who has
+   asked for less motion — the blink is the reduced-motion rule's business. */
+.answer__prompt::before {
+  content: '';
+  display: inline-block;
+  width: 1.5px;
+  height: 0.95em;
+  margin-right: 5px;
+  vertical-align: -0.12em;
+  background: currentColor;
+  animation: caret 1.15s step-end infinite;
+}
+
+@keyframes caret {
+  0%,
+  48% {
+    opacity: 1;
+  }
+  49%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .answer--urgent .answer__prompt {
@@ -794,11 +854,44 @@ button.status__now:active {
   color: var(--ink);
 }
 
+.countdown {
+  transition: transform 150ms ease;
+}
+
+.countdown:active {
+  transform: scale(0.99);
+}
+
+/* No date yet: an empty slot that says so and asks to be filled. A chip rather
+   than a dashed field, deliberately — the answer card above it is a page you
+   write on, and this is a value you set. Two different jobs should not arrive
+   in the same clothes. */
+.countdown__action {
+  flex-shrink: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--terracotta);
+  border: 1px dashed rgba(176, 86, 60, 0.5);
+  border-radius: 999px;
+  padding: 5px 13px;
+  white-space: nowrap;
+}
+
 .countdown__count {
   display: flex;
   align-items: baseline;
   gap: 5px;
   flex-shrink: 0;
+}
+
+/* The quietest possible "and this can be changed". A set date is there to be
+   read, so the sign that it is also a control stays out of the way until it is
+   looked for. */
+.countdown__more {
+  align-self: center;
+  margin-left: 3px;
+  color: var(--ink-pale);
+  opacity: 0.6;
 }
 
 .countdown__number {

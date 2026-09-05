@@ -107,7 +107,17 @@ export const CountdownCard = memo(function CountdownCard() {
   return (
     <button className={near ? 'countdown countdown--near' : 'countdown'} onClick={() => setEditing(true)}>
       <span className="countdown__where">{sentence()}</span>
-      {days !== null && (
+
+      {/* Two states, two different things to ask of the reader. With no date
+          there is nothing to read and everything to do, so the right-hand slot
+          holds an empty control waiting to be filled — a chip, not a field:
+          this is a value you set, and it should not be mistaken for the answer
+          card, which is a page you write on. With a date it is a fact to be
+          read, and all it owes the reader is a quiet sign that it can still be
+          changed. */}
+      {days === null ? (
+        <span className="countdown__action">{t('countdown.set')}</span>
+      ) : (
         <span className="countdown__count">
           {days <= 0 ? (
             <span className="countdown__word">{t('countdown.today')}</span>
@@ -120,6 +130,9 @@ export const CountdownCard = memo(function CountdownCard() {
               <span className="countdown__unit">{tp('countdown.days', days)}</span>
             </>
           )}
+          <svg className="countdown__more" width="6" height="10" viewBox="0 0 6 10" fill="none" aria-hidden="true">
+            <path d="M1 1l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </span>
       )}
     </button>
