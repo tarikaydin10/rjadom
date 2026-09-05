@@ -119,6 +119,11 @@ textarea {
    system — see .sky__frame. */
 .sky {
   position: relative;
+  /* The sky proper: the top of the band down to the horizon, the island's strip
+     included. Everything that is weather or sky — the wash, the cloud, the rain,
+     the star field — is measured in this rather than in the frame below it, so
+     none of them can begin on a line across the top of the screen. */
+  --sky-height: calc(var(--safe-top) + var(--horizon));
   height: calc(var(--band-height) + var(--safe-top));
   overflow: hidden;
   background: var(--night);
@@ -175,13 +180,25 @@ textarea {
 /* All four move by transform alone, so the compositor carries them and a phone
    does not warm up drawing drizzle. Motion stops entirely under the
    reduced-motion rule at the end of this file, leaving the shapes in place. */
-/* Reaches the horizon and no further: below it is ground, not weather. */
-.wx__wash {
+/* One city's weather, over the whole of its sky.
+   It used to live inside `.sky__frame`, which starts below the island — so an
+   overcast wash began at full strength on that line and drew a hard edge right
+   under the phone's clock, the one thing in the band that is supposed to have
+   no edge at all. It is pulled back up to the top of the band here, and clipped
+   at the horizon, because below that is ground rather than weather. */
+.sky__weather {
   position: absolute;
   left: 0;
   right: 0;
-  top: 0;
-  height: var(--horizon);
+  top: calc(-1 * var(--safe-top));
+  height: var(--sky-height);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.wx__wash {
+  position: absolute;
+  inset: 0;
 }
 
 .wx__cloud {
@@ -260,7 +277,7 @@ textarea {
     opacity: 1;
   }
   to {
-    transform: translateY(var(--horizon));
+    transform: translateY(var(--sky-height));
     opacity: 0;
   }
 }
@@ -274,13 +291,13 @@ textarea {
     opacity: 1;
   }
   50% {
-    transform: translate(7px, 111px);
+    transform: translate(7px, calc(var(--sky-height) * 0.46));
   }
   85% {
     opacity: 1;
   }
   to {
-    transform: translate(0, var(--horizon));
+    transform: translate(0, var(--sky-height));
     opacity: 0;
   }
 }
@@ -303,7 +320,7 @@ textarea {
   left: 0;
   right: 0;
   top: 0;
-  height: calc(var(--safe-top) + var(--horizon));
+  height: var(--sky-height);
   overflow: hidden;
 }
 

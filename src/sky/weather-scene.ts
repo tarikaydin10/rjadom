@@ -9,10 +9,16 @@
  * Scattered once from a fixed seed, like the stars — see `lib/random.ts`.
  */
 import { seeded } from '../lib/random';
-import { HORIZON } from './engine';
 
 export interface Cloud {
-  /** Percent of the band's width, and pixels down from its top. */
+  /**
+   * Percent of the sky's height, not pixels down the band.
+   *
+   * The sky grows by whatever the phone hides at the top, and a cloud placed in
+   * band pixels ignored that strip — which is the same mistake that had the
+   * overcast wash begin on a line under the clock. A fraction fills whatever
+   * the sky turns out to be, exactly as the star field does.
+   */
   y: number;
   width: number;
   height: number;
@@ -31,6 +37,7 @@ export interface Drop {
 }
 
 export interface Haze {
+  /** Percent of the sky's height, as for a cloud. */
   y: number;
   opacity: number;
   drift: number;
@@ -77,9 +84,9 @@ export function weatherScene(condition: string, seedKey: string): WeatherScene {
   const clouds: Cloud[] = Array.from({ length: recipe.clouds }, () => {
     const scale = 0.6 + random() * 0.9;
     return {
-      // The middle of the sky, expressed as a fraction of it: high enough to
-      // clear the ground, low enough to leave the top of the band to the stars.
-      y: Number((HORIZON * (0.4 + random() * 0.28)).toFixed(1)),
+      // The middle of the sky: high enough to clear the ground, low enough to
+      // leave the top of the band to the stars.
+      y: Number((40 + random() * 28).toFixed(1)),
       width: Number((90 * scale).toFixed(0)),
       height: Number((26 * scale).toFixed(0)),
       opacity: Number(Math.min(0.9, recipe.cover * (0.95 + random() * 0.5)).toFixed(2)),
@@ -101,8 +108,9 @@ export function weatherScene(condition: string, seedKey: string): WeatherScene {
       };
     });
 
+  // Low down, where a real haze lies: the last stretch above the horizon.
   const haze: Haze[] = Array.from({ length: recipe.haze }, (_, i) => ({
-    y: Number((HORIZON - 34 + i * 13).toFixed(1)),
+    y: Number((86 + i * 5.4).toFixed(1)),
     opacity: Number((0.1 + random() * 0.13).toFixed(2)),
     drift: Number((120 + random() * 90).toFixed(0)),
     delay: Number((-random() * 200).toFixed(0)),

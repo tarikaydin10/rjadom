@@ -2,12 +2,13 @@ import type { CSSProperties } from 'react';
 import { weatherScene } from '../sky/weather-scene';
 
 /**
- * One city's weather, drawn over its half of the band.
+ * One city's weather, drawn over its half of the sky.
  *
  * Masked with the same soft edge the two skies use, so Hamburg's rain fades into
  * Kaliningrad's clear sky rather than stopping at a line down the middle. Clouds
- * sit in front of the sun and moon — that is where clouds are — and everything
- * falls below the text, in the strip between the notes and the horizon.
+ * sit in front of the sun and moon — that is where clouds are — which is why
+ * this stays inside `.sky__frame` even though `.sky__weather` reaches back up
+ * past it, to the top of the band.
  */
 interface Props {
   condition: string | null;
@@ -34,14 +35,7 @@ export function WeatherLayer({ condition, city, side, isDay }: Props) {
   const rim = isDay ? '150, 163, 184' : '150, 148, 170';
   const wet = isDay ? '104, 126, 150' : '196, 206, 226';
 
-  const layer: CSSProperties = {
-    position: 'absolute',
-    inset: 0,
-    overflow: 'hidden',
-    pointerEvents: 'none',
-    WebkitMaskImage: mask,
-    maskImage: mask,
-  };
+  const layer: CSSProperties = { WebkitMaskImage: mask, maskImage: mask };
 
   /**
    * Cover greys the sky itself, which is what overcast actually is — the first
@@ -51,7 +45,7 @@ export function WeatherLayer({ condition, city, side, isDay }: Props) {
   const wash = isDay ? '176, 188, 204' : '96, 96, 118';
 
   return (
-    <div style={layer} aria-hidden="true">
+    <div className="sky__weather" style={layer} aria-hidden="true">
       {scene.dimming > 0.2 && (
         <span
           className="wx__wash"
@@ -67,7 +61,7 @@ export function WeatherLayer({ condition, city, side, isDay }: Props) {
           className="wx__cloud"
           style={
             {
-              top: cloud.y,
+              top: `${cloud.y}%`,
               width: cloud.width,
               height: cloud.height,
               background: `radial-gradient(62% 100% at 50% 42%, rgba(${core}, ${cloud.opacity}) 0%, rgba(${rim}, ${cloud.opacity * 0.8}) 54%, rgba(${rim}, 0) 76%)`,
@@ -84,7 +78,7 @@ export function WeatherLayer({ condition, city, side, isDay }: Props) {
           className="wx__haze"
           style={
             {
-              top: band.y,
+              top: `${band.y}%`,
               background: `linear-gradient(90deg, rgba(${core},0) 0%, rgba(${core},${band.opacity}) 35%, rgba(${core},${band.opacity}) 65%, rgba(${core},0) 100%)`,
               animationDuration: `${band.drift}s`,
               animationDelay: `${band.delay}s`,
