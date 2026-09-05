@@ -64,7 +64,10 @@ export function WeatherLayer({ condition, city, side, isDay }: Props) {
               top: `${cloud.y}%`,
               width: cloud.width,
               height: cloud.height,
-              background: `radial-gradient(62% 100% at 50% 42%, rgba(${core}, ${cloud.opacity}) 0%, rgba(${rim}, ${cloud.opacity * 0.8}) 54%, rgba(${rim}, 0) 76%)`,
+              // A body that holds most of the way out, then a soft rim. The
+              // falloff used to begin almost at the centre, so even an opaque
+              // cloud arrived on screen as a faint bloom with no shape to it.
+              background: `radial-gradient(64% 100% at 50% 44%, rgba(${core}, ${cloud.opacity}) 0%, rgba(${core}, ${(cloud.opacity * 0.94).toFixed(2)}) 36%, rgba(${rim}, ${(cloud.opacity * 0.82).toFixed(2)}) 64%, rgba(${rim}, 0) 84%)`,
               animationDuration: `${cloud.drift}s`,
               animationDelay: `${cloud.delay}s`,
             } as CSSProperties

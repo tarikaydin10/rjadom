@@ -201,11 +201,13 @@ textarea {
   inset: 0;
 }
 
+/* Blurred enough to be a cloud, not so much that it is a stain. At 5px a cloud
+   this size had no edge left anywhere and simply read as a smudge on the glass. */
 .wx__cloud {
   position: absolute;
   left: 0;
   border-radius: 50%;
-  filter: blur(5px);
+  filter: blur(4px);
   will-change: transform;
   animation-name: drift;
   animation-timing-function: linear;
@@ -227,7 +229,7 @@ textarea {
 .wx__drop {
   position: absolute;
   top: 0;
-  width: 1px;
+  width: 1.6px;
   border-radius: 1px;
   animation-name: fall;
   animation-timing-function: linear;
@@ -839,20 +841,25 @@ button.status__now:active {
   flex-shrink: 0;
 }
 
+/* The bar reaches the bottom edge, and now looks as though it does.
+   It always ended exactly on it — the box was flush all along. What was not
+   flush was the picture: the strip a phone keeps for its home indicator belongs
+   to the bar, but on bare paper, with only a hairline above the labels, it read
+   as a gap the bar was floating over. iOS solves this with a material, and so
+   does this: the bar sits on its own surface, so the cushion under the labels is
+   plainly part of it rather than empty page below it.
+   The cushion itself is the platform's, not ours — the indicator swallows swipes
+   in that strip, so nothing tappable may sit there. */
 .tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  /* Sits on the bottom edge, clear of the home indicator. The indicator's strip
-     is already unusable space and reads as the bar's bottom margin, so the bar
-     takes the larger of the two rather than stacking its own padding on top —
-     which is what left it floating a centimetre above the edge on a phone. */
-  padding: 10px 0 max(10px, var(--safe-bottom));
-  background: var(--paper);
+  padding: 11px 0 max(11px, var(--safe-bottom));
+  background: var(--card);
+  box-shadow: 0 -1px 0 var(--border), 0 -10px 18px -12px rgba(74, 56, 42, 0.16);
   text-align: center;
   font-size: 11px;
   letter-spacing: 0.1em;
   color: var(--ink-muted);
-  border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
 

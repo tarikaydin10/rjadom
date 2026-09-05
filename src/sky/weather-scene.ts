@@ -53,20 +53,27 @@ export interface WeatherScene {
   dimming: number;
 }
 
-/** Cloud, rain and snow counts per condition. */
+/**
+ * Cloud, rain and snow counts per condition.
+ *
+ * Deliberately quiet is not the same as barely there, and the first pass landed
+ * on the wrong side of that line: on an overcast afternoon you had to look for
+ * the weather to notice it at all. There is more of everything here, and what
+ * there is carries further — see the cloud and drop shapes below.
+ */
 const RECIPES: Record<string, { clouds: number; cover: number; rain: number; snow: number; haze: number }> = {
   clear: { clouds: 0, cover: 0, rain: 0, snow: 0, haze: 0 },
-  mostlyClear: { clouds: 1, cover: 0.16, rain: 0, snow: 0, haze: 0 },
-  cloudy: { clouds: 3, cover: 0.4, rain: 0, snow: 0, haze: 0 },
-  overcast: { clouds: 5, cover: 0.68, rain: 0, snow: 0, haze: 1 },
-  fog: { clouds: 2, cover: 0.3, rain: 0, snow: 0, haze: 3 },
-  drizzle: { clouds: 3, cover: 0.5, rain: 10, snow: 0, haze: 1 },
-  rain: { clouds: 4, cover: 0.62, rain: 20, snow: 0, haze: 0 },
-  freezingRain: { clouds: 4, cover: 0.62, rain: 16, snow: 0, haze: 1 },
-  showers: { clouds: 4, cover: 0.58, rain: 26, snow: 0, haze: 0 },
-  snow: { clouds: 4, cover: 0.6, rain: 0, snow: 16, haze: 1 },
-  snowShowers: { clouds: 5, cover: 0.66, rain: 0, snow: 22, haze: 1 },
-  thunderstorm: { clouds: 5, cover: 0.75, rain: 26, snow: 0, haze: 0 },
+  mostlyClear: { clouds: 2, cover: 0.18, rain: 0, snow: 0, haze: 0 },
+  cloudy: { clouds: 5, cover: 0.44, rain: 0, snow: 0, haze: 0 },
+  overcast: { clouds: 8, cover: 0.72, rain: 0, snow: 0, haze: 1 },
+  fog: { clouds: 3, cover: 0.32, rain: 0, snow: 0, haze: 3 },
+  drizzle: { clouds: 5, cover: 0.54, rain: 18, snow: 0, haze: 1 },
+  rain: { clouds: 7, cover: 0.66, rain: 32, snow: 0, haze: 0 },
+  freezingRain: { clouds: 7, cover: 0.66, rain: 26, snow: 0, haze: 1 },
+  showers: { clouds: 7, cover: 0.62, rain: 40, snow: 0, haze: 0 },
+  snow: { clouds: 7, cover: 0.64, rain: 0, snow: 24, haze: 1 },
+  snowShowers: { clouds: 8, cover: 0.7, rain: 0, snow: 32, haze: 1 },
+  thunderstorm: { clouds: 8, cover: 0.78, rain: 40, snow: 0, haze: 0 },
 };
 
 const cache = new Map<string, WeatherScene>();
@@ -82,14 +89,15 @@ export function weatherScene(condition: string, seedKey: string): WeatherScene {
   const random = seeded(seedKey === 'hamburg' ? 0x4c10ad : 0x5f10ce);
 
   const clouds: Cloud[] = Array.from({ length: recipe.clouds }, () => {
-    const scale = 0.6 + random() * 0.9;
+    const scale = 0.7 + random() * 1.05;
     return {
-      // The middle of the sky: high enough to clear the ground, low enough to
-      // leave the top of the band to the stars.
-      y: Number((40 + random() * 28).toFixed(1)),
-      width: Number((90 * scale).toFixed(0)),
-      height: Number((26 * scale).toFixed(0)),
-      opacity: Number(Math.min(0.9, recipe.cover * (0.95 + random() * 0.5)).toFixed(2)),
+      // Spread over most of the sky rather than one band across the middle: a
+      // row of clouds all at the same height reads as a decoration, several at
+      // different heights read as weather.
+      y: Number((26 + random() * 44).toFixed(1)),
+      width: Number((116 * scale).toFixed(0)),
+      height: Number((34 * scale).toFixed(0)),
+      opacity: Number(Math.min(0.92, recipe.cover * (1.15 + random() * 0.45)).toFixed(2)),
       // Slow. A cloud that visibly races is a cartoon.
       drift: Number((70 + random() * 110).toFixed(0)),
       delay: Number((-random() * 180).toFixed(0)),
@@ -101,8 +109,8 @@ export function weatherScene(condition: string, seedKey: string): WeatherScene {
       const period = fast ? 0.7 + random() * 0.5 : 3.4 + random() * 2.6;
       return {
         x: Number((random() * 100).toFixed(2)),
-        length: fast ? Number((7 + random() * 7).toFixed(1)) : Number((1.6 + random() * 1.4).toFixed(1)),
-        opacity: Number((0.3 + random() * 0.4).toFixed(2)),
+        length: fast ? Number((11 + random() * 9).toFixed(1)) : Number((2.4 + random() * 1.8).toFixed(1)),
+        opacity: Number((0.45 + random() * 0.4).toFixed(2)),
         fall: Number(period.toFixed(2)),
         delay: Number((-random() * period).toFixed(2)),
       };
