@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { TabBar, type TabId } from './components/TabBar';
+import { ViewportDebug } from './components/ViewportDebug';
 import { Today } from './screens/Today';
 import { Us } from './screens/Us';
 import { Placeholder } from './screens/Placeholder';
@@ -7,8 +8,6 @@ import { Lock } from './screens/Lock';
 import { isUnlocked, subscribePair } from './data/pair';
 import { startSync } from './data/sync';
 import { prefetchDays } from './sky/engine';
-
-import { ViewportDebug } from './components/ViewportDebug';
 
 function useUnlocked(): boolean {
   return useSyncExternalStore(subscribePair, isUnlocked, () => true);
@@ -44,6 +43,8 @@ export function App() {
       {tab === 'chronicle' && <Placeholder title="tabs.chronicle" note="soon.chronicle" />}
       {tab === 'us' && <Us />}
       <TabBar active={tab} onChange={setTab} />
+      {/* Vorübergehend, bis der Rahmen im Standalone-Modus geklärt ist. */}
+      <ViewportDebug />
     </div>
   );
 }

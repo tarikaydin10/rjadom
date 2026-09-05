@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 
 /**
  * Vorübergehend. Beantwortet genau eine Frage: warum die App im Standalone-Modus
@@ -6,51 +6,77 @@ import { useEffect, useState } from 'react';
  *
  * Ein `?debug=1` hilft hier nicht — die PWA startet immer auf `start_url: '/'`,
  * ein Parameter überlebt den Start vom Home-Bildschirm nicht. Also sichtbar,
- * bis man es wegtippt; die Entscheidung, ob der Rahmen vom Viewport, vom
- * Layout oder von den Safe-Area-Werten kommt, braucht keine zweite Sitzung.
+ * bis man es wegtippt.
  *
  * Wieder entfernen, sobald die Zahlen abgelesen sind.
  */
+
+/** Das breiteste Element der Seite, samt seiner Breite. Wenn irgendetwas den
+ *  Layout-Viewport über `width=device-width` hinaus aufspannt, steht es hier. */
+function widest(): string {
+  let worst: Element | null = null;
+  let max = 0;
+  for (const el of Array.from(document.querySelectorAll('*'))) {
+    const r = el.getBoundingClientRect();
+    if (r.right > max) {
+      max = r.right;
+      worst = el;
+    }
+  }
+  if (!worst) return '-';
+  const name = worst.tagName.toLowerCase() + (worst.className && typeof worst.className === 'string' ? '.' + worst.className.trim().split(/\s+/).join('.') : '');
+  return `${Math.round(max)}px ${name.slice(0, 48)}`;
+}
+
 export function ViewportDebug() {
-  const [, tick] = useState(0);
+  const [rows, setRows] = useState<Array<[string, string]>>([]);
   const [hidden, setHidden] = useState(false);
 
-  useEffect(() => {
-    const redraw = () => tick((n) => n + 1);
-    window.addEventListener('resize', redraw);
-    window.addEventListener('orientationchange', redraw);
-    window.visualViewport?.addEventListener('resize', redraw);
-    window.visualViewport?.addEventListener('scroll', redraw);
+  // Nach dem Commit, nicht im Render: vorher gibt es .app und .tabs im DOM noch
+  // nicht, und beide Zeilen kamen deshalb als "-" zurück.
+  useLayoutEffect(() => {
+    const measure = () => {
+      const root = getComputedStyle(document.documentElement);
+      const app = document.querySelector('.app')?.getBoundingClientRect();
+      const tabs = document.querySelector('.tabs')?.getBoundingClientRect();
+      const vv = window.visualViewport;
+      const de = document.documentElement;
+
+      setRows([
+        ['display-mode', ['standalone', 'fullscreen', 'minimal-ui', 'browser'].find((m) => window.matchMedia(`(display-mode: ${m})`).matches) ?? '?'],
+        ['inner', `${window.innerWidth} x ${window.innerHeight}`],
+        ['screen', `${window.screen.width} x ${window.screen.height} dpr${window.devicePixelRatio}`],
+        ['vv scale', vv ? `${vv.scale} → ${Math.round(vv.width)} x ${Math.round(vv.height)}` : '-'],
+        ['scroll w/h', `${de.scrollWidth} x ${de.scrollHeight}`],
+        ['client w/h', `${de.clientWidth} x ${de.clientHeight}`],
+        ['widest', widest()],
+        ['safe t/r/b/l', ['--safe-top', '--safe-right', '--safe-bottom', '--safe-left'].map((v) => root.getPropertyValue(v).trim() || '0px').join(' ')],
+        ['tabbar', `${root.getPropertyValue('--tabbar-content').trim()} + safe`],
+        ['.app', app ? `${Math.round(app.left)},${Math.round(app.top)} ${Math.round(app.width)}x${Math.round(app.height)}` : '-'],
+        ['.tabs', tabs ? `${Math.round(tabs.left)},${Math.round(tabs.top)} ${Math.round(tabs.width)}x${Math.round(tabs.height)}` : '-'],
+        ['unter .tabs', tabs ? `${Math.round(window.innerHeight - tabs.bottom)}px bis Viewport` : '-'],
+      ]);
+    };
+
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('orientationchange', measure);
+    window.visualViewport?.addEventListener('resize', measure);
     return () => {
-      window.removeEventListener('resize', redraw);
-      window.removeEventListener('orientationchange', redraw);
-      window.visualViewport?.removeEventListener('resize', redraw);
-      window.visualViewport?.removeEventListener('scroll', redraw);
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('orientationchange', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
     };
   }, []);
 
+  // Ein zweiter Blick, nachdem Schriften und Himmelsband fertig sind — die
+  // Messung direkt nach dem ersten Commit kann noch ein Zwischenstand sein.
+  useEffect(() => {
+    const t = window.setTimeout(() => window.dispatchEvent(new Event('resize')), 1500);
+    return () => window.clearTimeout(t);
+  }, []);
+
   if (hidden) return null;
-
-  const root = getComputedStyle(document.documentElement);
-  const app = document.querySelector('.app')?.getBoundingClientRect();
-  const tabs = document.querySelector('.tabs')?.getBoundingClientRect();
-  const vv = window.visualViewport;
-
-  // Die vier Insets kommen aus den Variablen in styles.css, nicht direkt aus
-  // env(): so steht hier derselbe Wert, mit dem das Layout tatsächlich rechnet.
-  const rows: Array<[string, string]> = [
-    ['display-mode', ['standalone', 'fullscreen', 'minimal-ui', 'browser'].find((m) => window.matchMedia(`(display-mode: ${m})`).matches) ?? '?'],
-    ['navigator.standalone', String((navigator as { standalone?: boolean }).standalone)],
-    ['window inner', `${window.innerWidth} x ${window.innerHeight}`],
-    ['visualViewport', vv ? `${Math.round(vv.width)} x ${Math.round(vv.height)} @${vv.scale}` : '-'],
-    ['screen', `${window.screen.width} x ${window.screen.height} dpr ${window.devicePixelRatio}`],
-    ['doc client', `${document.documentElement.clientWidth} x ${document.documentElement.clientHeight}`],
-    ['safe t/r/b/l', ['--safe-top', '--safe-right', '--safe-bottom', '--safe-left'].map((v) => root.getPropertyValue(v).trim() || '0px').join(' ')],
-    ['tabbar content/total', `${root.getPropertyValue('--tabbar-content').trim()} / ${root.getPropertyValue('--tabbar-height').trim()}`],
-    ['.app rect', app ? `${Math.round(app.left)},${Math.round(app.top)} ${Math.round(app.width)}x${Math.round(app.height)}` : '-'],
-    ['.tabs rect', tabs ? `${Math.round(tabs.left)},${Math.round(tabs.top)} ${Math.round(tabs.width)}x${Math.round(tabs.height)}` : '-'],
-    ['unter .tabs', app && tabs ? `${Math.round(app.bottom - tabs.bottom)}px bis .app, ${Math.round(window.innerHeight - tabs.bottom)}px bis Viewport` : '-'],
-  ];
 
   return (
     <div
