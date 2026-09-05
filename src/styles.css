@@ -178,14 +178,25 @@ textarea {
    under the phone's clock, the one thing in the band that is supposed to have
    no edge at all. It is pulled back up to the top of the band here, and clipped
    at the horizon, because below that is ground rather than weather. */
+/* Each city's own end of the sky, not the whole band — see `WeatherLayer`. The
+   two regions overlap by a tenth in the middle, which is where their fades
+   cross, so there is no seam and no dead strip either. */
 .sky__weather {
   position: absolute;
-  left: 0;
-  right: 0;
   top: calc(-1 * var(--safe-top));
   height: var(--sky-height);
   overflow: hidden;
   pointer-events: none;
+}
+
+.sky__weather--left {
+  left: 0;
+  right: 45%;
+}
+
+.sky__weather--right {
+  left: 45%;
+  right: 0;
 }
 
 .wx__wash {
@@ -237,12 +248,16 @@ textarea {
   animation-iteration-count: infinite;
 }
 
+/* Measured in the cloud's own width, so the distance it travels has to suit the
+   box it travels in. That box is now a city's region rather than the whole
+   band — a little over half as wide — and at the old 520% a cloud spent most of
+   its cycle clipped outside it, which read as a sky that keeps emptying. */
 @keyframes drift {
   from {
     transform: translateX(-120%);
   }
   to {
-    transform: translateX(520%);
+    transform: translateX(380%);
   }
 }
 

@@ -2,13 +2,26 @@ import type { CSSProperties } from 'react';
 import { weatherScene } from '../sky/weather-scene';
 
 /**
- * One city's weather, drawn over its half of the sky.
+ * One city's weather, drawn over its own end of the sky.
  *
- * Masked with the same soft edge the two skies use, so Hamburg's rain fades into
- * Kaliningrad's clear sky rather than stopping at a line down the middle. Clouds
- * sit in front of the sun and moon — that is where clouds are — which is why
- * this stays inside `.sky__frame` even though `.sky__weather` reaches back up
- * past it, to the top of the band.
+ * It used to be drawn over the whole band and masked back: solid to a fifth of
+ * the way across, gone by four fifths. Two of those overlap across the middle
+ * sixty per cent of the screen, so Hamburg's rain and Kaliningrad's clear sky
+ * were superimposed over most of the band and neither could be read. Weather
+ * that cannot be told apart is the one thing this layer exists to do.
+ *
+ * So each city now owns a region rather than the band: full strength out to
+ * about a third, gone by a little past halfway, and the two fades cross in a
+ * quiet seam down the middle. Rain on one side and sun on the other is now a
+ * picture of two places, which is what it is.
+ *
+ * The mask is written in the region's own coordinates and the region is the
+ * element, so the drops and clouds are scattered inside it — the density is
+ * whatever the recipe says, rather than whatever survived a mask.
+ *
+ * Clouds sit in front of the sun and moon — that is where clouds are — which is
+ * why this stays inside `.sky__frame` even though `.sky__weather` reaches back
+ * up past it, to the top of the band.
  */
 interface Props {
   condition: string | null;
@@ -17,8 +30,9 @@ interface Props {
   isDay: boolean;
 }
 
-const LEFT_MASK = 'linear-gradient(90deg, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 80%)';
-const RIGHT_MASK = 'linear-gradient(90deg, rgba(0,0,0,0) 20%, rgba(0,0,0,1) 80%)';
+/** Solid across the inner half of the region, gone at its inner edge. */
+const LEFT_MASK = 'linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%)';
+const RIGHT_MASK = 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 45%, rgba(0,0,0,1) 100%)';
 
 export function WeatherLayer({ condition, city, side, isDay }: Props) {
   if (!condition || condition === 'clear') return null;
@@ -45,7 +59,7 @@ export function WeatherLayer({ condition, city, side, isDay }: Props) {
   const wash = isDay ? '176, 188, 204' : '96, 96, 118';
 
   return (
-    <div className="sky__weather" style={layer} aria-hidden="true">
+    <div className={`sky__weather sky__weather--${side}`} style={layer} aria-hidden="true">
       {scene.dimming > 0.2 && (
         <span
           className="wx__wash"
