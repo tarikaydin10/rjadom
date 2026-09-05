@@ -192,7 +192,8 @@ Durchprobieren).
 **Was das nicht ist:** Verschlüsselung. Die Antworten liegen unverschlüsselt in
 der lokalen Datenbank — wer das entsperrte Telefon in der Hand hält, liest mit.
 Der Schutz gilt gegen Fremde im Netz, nicht gegen jemanden mit eurem Gerät.
-Nehmt eine lange, zufällige Passphrase; der Sperrbildschirm schlägt eine vor.
+Nehmt eine lange, zufällige Passphrase — `deploy/README.md` zeigt, wie ihr
+beim Einrichten eine erzeugt.
 
 ### Lock-In: ihre Antwort erscheint erst, wenn du geschrieben hast
 

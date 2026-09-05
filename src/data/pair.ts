@@ -73,11 +73,3 @@ export function subscribePair(listener: () => void): () => void {
 export function isUnlocked(): boolean {
   return getPair() !== null;
 }
-
-/** A passphrase worth using: 20 random characters, not an anniversary. */
-export function suggestSecret(): string {
-  const alphabet = 'abcdefghijkmnopqrstuvwxyz23456789';
-  const bytes = new Uint8Array(20);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
-}

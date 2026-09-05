@@ -142,7 +142,6 @@ export const en = {
     checking: 'Checking …',
     wrong: 'That passphrase does not match.',
     offline: 'No connection, so the passphrase cannot be checked right now. Try again once you are online.',
-    suggest: 'Suggest a strong one',
     caveat: 'A lock, not encryption: whoever holds this phone unlocked can read the answers.',
   },
 
@@ -273,7 +272,6 @@ export const ru: DeepStringShape<typeof en> = {
     checking: 'Проверяем …',
     wrong: 'Пароль не подходит.',
     offline: 'Нет связи, пароль сейчас не проверить. Попробуй, когда появится интернет.',
-    suggest: 'Предложить надёжный',
     caveat: 'Это замок, а не шифрование: кто держит разблокированный телефон, тот читает ответы.',
   },
 
