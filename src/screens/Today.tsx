@@ -153,7 +153,7 @@ export function Today() {
           </span>
         ) : (
           <button className="status__now" onClick={backToNow}>
-            {`${scrubbedToAnotherDay ? `${dayAndMonth(shownMs, locale)} ` : ''}${timeOfDay(shownMs, locale)} · ${t('sky.backToNow')}`}
+            {t('sky.backToNow')}
           </button>
         )}
       </div>

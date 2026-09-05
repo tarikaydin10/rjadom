@@ -85,11 +85,11 @@ export function AnswerPair({ day, partnerName, saving, onSave }: Props) {
           </>
         ) : (
           <button
-            className="answer__placeholder"
+            className={`answer__placeholder ${partnerAnswered ? 'answer__placeholder--urgent' : ''}`}
             onClick={beginEdit}
-            style={{ background: 'none', border: 0, padding: 0, textAlign: 'left', font: 'inherit', fontStyle: 'italic', color: 'var(--ink-pale)', cursor: 'text' }}
+            style={{ background: 'none', border: 0, padding: 0, textAlign: 'left', font: 'inherit', fontStyle: 'italic', color: partnerAnswered ? 'var(--terracotta)' : 'var(--ink-pale)', cursor: 'text' }}
           >
-            {t('answer.placeholder')}
+            {partnerAnswered ? t('answer.placeholderUrgent') : t('answer.placeholder')}
           </button>
         )}
       </div>

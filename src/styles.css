@@ -603,6 +603,16 @@ button.status__now:active {
   font-style: italic;
 }
 
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.answer__placeholder--urgent {
+  animation: pulse-text 2.5s ease-in-out infinite;
+  color: var(--terracotta) !important;
+}
+
 .answer__foot {
   font-size: 12px;
   color: var(--ink-muted);

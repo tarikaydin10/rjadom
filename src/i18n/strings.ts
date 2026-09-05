@@ -65,6 +65,7 @@ export const en = {
   answer: {
     you: 'You',
     placeholder: 'Tap to write …',
+    placeholderUrgent: 'Tap to unlock their answer …',
     hidden: 'Visible once you have written.',
     notYet: 'Has not written yet.',
     waiting: 'Waiting for your answer.',
@@ -199,6 +200,7 @@ export const ru: DeepStringShape<typeof en> = {
   answer: {
     you: 'Ты',
     placeholder: 'Нажми, чтобы написать …',
+    placeholderUrgent: 'Нажми, чтобы открыть ответ …',
     hidden: 'Появится, когда ты напишешь.',
     notYet: 'Ещё не написал(а).',
     waiting: 'Ждём твой ответ.',
