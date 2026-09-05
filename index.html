@@ -11,12 +11,8 @@
          session and sat that far above the bottom edge, tab bar and all. The
          default, resizes-visual, leaves the layout alone and pans over it.
 
-         shrink-to-fit=no: Safari darf die Seite nicht herauszoomen, nur weil
-         irgendein Element breiter layoutet als der Bildschirm. Der Zeitstreifen
-         tut das absichtlich (sechs Tage in einem Element, per transform
-         geschoben), und Safari hat deshalb die ganze App auf 85% verkleinert.
-         Die eigentliche Sperre ist `contain` auf .rail__track in styles.css;
-         das hier ist der Gürtel zum Hosenträger. -->
+         shrink-to-fit=no: never zoom the page out to fit an element that lays
+         out wider than the screen (the time rail's strip does, on purpose). -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, shrink-to-fit=no"

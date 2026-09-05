@@ -47,16 +47,16 @@
   box-sizing: border-box;
 }
 
-/* Held still like an application, not a document.
-   The page itself never scrolls or bounces; only the panels that need to do.
-   Without this the whole screen rubber-bands under a thumb and the sky drifts
-   away from the top edge, which reads as a website in a browser rather than an
-   app on a phone. */
+/* The document scrolls, like any page — deliberately. A frozen shell
+   (`overflow: hidden` here, a `position: fixed` root) is the layout iOS stops
+   re-measuring after the first keyboard: the viewport stayed short for the rest
+   of the session and a strip of bare background sat under the tab bar. With a
+   scrolling document iOS recomputes on every scroll, which is why the same
+   phone never shows it on Trainer. `overscroll-behavior: none` keeps the sky
+   welded to the top edge instead of rubber-banding away from it. */
 html,
 body {
   margin: 0;
-  height: 100%;
-  overflow: hidden;
   overscroll-behavior: none;
   /* Same colour as the tab bar: whatever the shell leaves uncovered at the
      bottom edge reads as bar, not as a seam. */
@@ -85,34 +85,34 @@ textarea {
   user-select: text;
 }
 
-/* An den Viewport geheftet, statt von ihm bemessen.
-   `inset: 0` auf einer fixed-Box ist das eine Maß, das iOS ohne Nachhilfe
-   richtig hinbekommt: keine Prozentkette über body und html, kein dvh, das eine
-   Tastatur veraltet zurücklassen kann, nichts, was eine Adressleiste addiert
-   oder abzieht. Die Shell *ist* der Bildschirm — also steht die Leiste, die an
-   ihrer Unterkante sitzt, an der Unterkante des Bildschirms. */
 #root {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  overflow: hidden;
   /* Seen only where the window is wider than the app: the desk it lies on. */
   background: #ede6da;
 }
 
+/* A column at least one screen tall: the screen fills it, the tab bar ends it.
+   No overflow:hidden here — iOS scrolls such a box to reveal a focused field
+   and leaves the whole app shifted afterwards. */
 .app {
   width: 100%;
-  max-width: 440px;
-  height: 100%;
+  min-height: 100dvh;
+  margin: 0 auto;
   background: var(--paper);
   display: flex;
   flex-direction: column;
-  position: relative;
-  overflow: hidden;
   /* Landscape rounds the corners in from the sides. */
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
+}
+
+/* Phone-sized on a desk; on a phone, the full width — always. A max-width that
+   is narrower than the viewport draws a frame, and the viewport is not ours to
+   trust: Safari's per-site page zoom (85 %, 75 %) widens it, and a home-screen
+   app copies that zoom at install time and keeps it. */
+@media (min-width: 600px) {
+  .app {
+    max-width: 440px;
+  }
 }
 
 .kicker {
@@ -588,13 +588,9 @@ textarea {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  /* Der Streifen darin ist sechs Tage breit — rund 1500px auf einem 400px-Gerät.
-     overflow:hidden schneidet ihn zwar ab, aber Safari bemisst den Viewport am
-     *Layout*-Überlauf, nicht am gemalten Bild: es fand ein 1555px-Kind, zoomte
-     die ganze Seite auf 85% heraus, und nichts stimmte mehr — Rahmen um die
-     App, Safe-Area-Werte im falschen Koordinatenraum, wuchtige Tab-Leiste.
-     Containment nimmt den Streifen aus dieser Rechnung: was hier drin liegt,
-     ist für den Rest des Dokuments nicht existent. */
+  /* The strip inside is six days wide — some 1500px on a 400px phone. Contained,
+     so that nothing about it (its width, its overflow) can ever count toward
+     the document or the viewport. */
   contain: layout paint;
   /* Horizontal here, vertical to the page — the same division the band makes. */
   touch-action: pan-y;
@@ -1133,11 +1129,15 @@ textarea {
   flex-shrink: 0;
 }
 
-/* Das letzte Flex-Kind der Shell, nicht absolut positioniert: die Screens
-   darüber sind `flex: 1` und scrollen selbst, die Leiste nimmt sich unten, was
-   sie braucht — eine Zeile plus den Streifen des Home-Indicators. Keine
-   Höhenvariable, kein reserviertes Padding, kein Standalone-Sonderfall. */
+/* Last child of the column and sticky to the bottom of the viewport: on a
+   short screen it simply ends the column, on a long one it stays in view while
+   the page scrolls under it, and at the very end it is back in its own place.
+   Nothing reserves room for it, nothing computes its height — one row of
+   labels plus the home indicator's strip. */
 .tabs {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
   flex-shrink: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1177,10 +1177,6 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  min-height: 0;
 }
 
 .screen__title {
@@ -1198,18 +1194,12 @@ textarea {
   margin: 0;
 }
 
-/* The Today column: the band, then the page under it, in one scroller.
-   `contain` stops the bounce from chaining to the page behind — it does not
-   stop this element's own rubber-band, and dragging down at the top pulled the
-   sky away from the top of the screen to show the paper behind it. `none`
-   refuses the bounce outright, so the sky stays welded to the top edge. */
+/* The Today column: the band, then the page under it. Not a scroller of its
+   own — the document scrolls, see html/body. */
 .screen-scroll {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  overscroll-behavior-y: none;
 }
 
 
