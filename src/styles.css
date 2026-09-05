@@ -94,6 +94,9 @@ textarea {
   display: flex;
   justify-content: center;
   overflow: hidden;
+  /* A stacking context of its own, so the tab bar's underlay can sit behind the
+     shell without falling behind the page itself — see `.tabs::before`. */
+  isolation: isolate;
 }
 
 .app {
@@ -1140,24 +1143,47 @@ textarea {
   flex-shrink: 0;
 }
 
-/* The same strip again, pinned to the glass rather than to the bar.
+/* The bar's surface, carried past the bar's own box.
  *
- * Belt and braces, and cheap: whenever the bar's own cushion covers the strip
- * this is exactly underneath it and cannot be seen. It earns its place in the
- * one case the cushion cannot reach — a shell that comes up short of the
- * physical bottom, which is what Safari does whenever its own toolbar collapses
- * and the visual viewport grows past the layout one. The page has no way to
- * grow with it; a fixed strip in the bar's own colour simply carries the bar's
- * surface down to the edge, so there is no bare paper to notice.
+ * Twice, because there are two ways the bottom edge can go bare and they need
+ * opposite answers.
  *
- * Zero-height on anything without an inset, so a desktop never sees it. */
+ * `::after` is painted ON TOP, exactly the height of the inset. It covers the
+ * home-indicator strip when the gap is INSIDE the shell — the bar's own cushion
+ * having come out short. That is the bug fixed above, and this is the second
+ * lock on it.
+ *
+ * `::before` is painted BEHIND the shell, and deep. It covers the other case:
+ * the shell itself stopping above the glass, which is what happens whenever the
+ * visual viewport grows past the layout one — Safari collapsing its toolbar. A
+ * fixed element cannot know where the bar's bottom edge ended up, so this one
+ * simply lies under everything and lets the page paint over it; the only place
+ * it shows through is a gap, where it reads as the bar continuing to the edge
+ * rather than as bare paper. `#root` isolates, so "behind" means behind the
+ * shell and not behind the page.
+ *
+ * Both are scoped to the app's column — on a tablet the shell is a 440px strip
+ * down the middle of a much wider page, and a full-width band of bar colour
+ * under it would be a bar nobody asked for. `::after` is zero-height wherever
+ * there is no inset, so a desktop sees neither. */
+.tabs::before {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 440px;
+  height: 50vh;
+  background: var(--card);
+  z-index: -1;
+  pointer-events: none;
+}
+
 .tabs::after {
   content: '';
   position: fixed;
   bottom: 0;
-  /* The app's column, not the window's: on a tablet the shell is a 440px strip
-     down the middle of a much wider page, and a full-width band of bar colour
-     under it would be a bar nobody asked for. */
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
