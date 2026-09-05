@@ -118,19 +118,43 @@ export function putAnswer(
 }
 
 /**
- * Check a passphrase against the server before storing it, so a typo is caught
- * at the lock screen rather than showing up later as a silent sync failure.
+ * Check a passphrase and find out which side it belongs to.
+ *
+ * The side is the server's answer, not the client's claim: each city has its own
+ * passphrase, so which one you typed is what decides whether you are Hamburg or
+ * Kaliningrad. That is also why this cannot be changed in settings later — it is
+ * not a preference, it is which key opened the door.
+ *
+ * Returns null for a passphrase the server does not recognise.
  */
-export async function verifyPair(member: PairMember, secret: string): Promise<boolean> {
-  if (DISABLED) return true; // Nothing to verify against in local-only mode.
+export async function verifyPair(secret: string): Promise<PairMember | null> {
+  // Nothing to ask in local-only mode; there is only this device.
+  if (DISABLED) return 'a';
+
   const res = await fetch(`${BASE}/api/session`, {
-    headers: { accept: 'application/json', 'x-pair-member': member, 'x-pair-secret': encodeSecret(secret) },
+    headers: { accept: 'application/json', 'x-pair-secret': encodeSecret(secret) },
   });
-  if (res.status === 401 || res.status === 403) return false;
+  if (res.status === 401 || res.status === 403) return null;
   if (!res.ok) throw new ApiError(`HTTP ${res.status}`, res.status);
   // A dev server or a captive portal will happily answer 200 with HTML. Only a
   // real acknowledgement from our own API counts as a verified passphrase.
-  const body = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+  const body = (await res.json().catch(() => null)) as { ok?: boolean; member?: string } | null;
   if (body?.ok !== true) throw new ApiError('unexpected response', res.status);
-  return true;
+  return body.member === 'b' ? 'b' : 'a';
+}
+
+export interface RemoteSettings {
+  settings: unknown | null;
+  updatedAt: number;
+}
+
+export function fetchSettings(): Promise<RemoteSettings> {
+  return request<RemoteSettings>('/api/settings');
+}
+
+export function putSettings(settings: unknown, updatedAt: number): Promise<RemoteSettings> {
+  return request<RemoteSettings>('/api/settings', {
+    method: 'PUT',
+    body: JSON.stringify({ settings, updatedAt }),
+  });
 }

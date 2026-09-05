@@ -25,6 +25,14 @@ export interface Settings {
   /** Day 1 of the counter above the question. Null hides the counter. */
   startDate: string | null;
   reunion: { date: string | null; city: CityId };
+  /**
+   * When these were last edited, anywhere.
+   *
+   * Settings are shared: names and a reunion date belong to the two of you, not
+   * to the device they were typed on. This is what lets the newer edit win when
+   * two devices disagree.
+   */
+  updatedAt: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -34,6 +42,7 @@ export const DEFAULT_SETTINGS: Settings = {
   },
   startDate: null,
   reunion: { date: null, city: 'hamburg' },
+  updatedAt: 0,
 };
 
 /**
@@ -85,6 +94,7 @@ function migrate(stored: Partial<Settings> & LegacySettings): Settings {
     names,
     startDate: stored.startDate ?? DEFAULT_SETTINGS.startDate,
     reunion: { ...DEFAULT_SETTINGS.reunion, ...stored.reunion },
+    updatedAt: stored.updatedAt ?? 0,
   };
 }
 
@@ -95,6 +105,16 @@ export async function loadSettings(): Promise<Settings> {
 
 export async function saveSettings(settings: Settings): Promise<void> {
   await kvSet(KEY, settings);
+}
+
+/** Fold a copy from the server in, but never over a newer local edit. */
+export async function mergeRemoteSettings(remote: unknown, updatedAt: number): Promise<Settings | null> {
+  if (!remote || typeof remote !== 'object') return null;
+  const local = await loadSettings();
+  if (local.updatedAt >= updatedAt) return null;
+  const merged = migrate({ ...(remote as Partial<Settings>), updatedAt });
+  await saveSettings(merged);
+  return merged;
 }
 
 export function displayName(name: PersonName, locale: Locale): string {

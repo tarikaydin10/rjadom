@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, type Settings } from './settings';
+import { subscribeSync, syncNow } from './sync';
 
 interface SettingsContextValue {
   settings: Settings;
@@ -27,9 +28,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Whatever the courier brings back — a reunion date set on the other phone —
+  // appears without anyone reaching for a refresh.
+  useEffect(() => subscribeSync(() => void loadSettings().then(setSettings)), []);
+
   const update = useCallback(async (next: Settings) => {
-    setSettings(next);
-    await saveSettings(next);
+    // Stamped on write, so the newer edit wins wherever the two disagree.
+    const stamped = { ...next, updatedAt: Date.now() };
+    setSettings(stamped);
+    await saveSettings(stamped);
+    void syncNow().catch(() => undefined);
   }, []);
 
   const value = useMemo(() => ({ settings, loading, update }), [settings, loading, update]);

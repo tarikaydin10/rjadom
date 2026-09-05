@@ -1,4 +1,14 @@
-import { ApiError, fetchDay, putAnswer as putRemoteAnswer, syncConfigured, syncEnabled, type DayResponse } from './api';
+import {
+  ApiError,
+  fetchDay,
+  fetchSettings,
+  putAnswer as putRemoteAnswer,
+  putSettings,
+  syncConfigured,
+  syncEnabled,
+  type DayResponse,
+} from './api';
+import { loadSettings, mergeRemoteSettings } from './settings';
 import {
   answerId,
   dequeue,
@@ -125,6 +135,22 @@ function activeDates(): string[] {
   return [dateKey(now), dateKey(now - 24 * 60 * 60 * 1000)];
 }
 
+/**
+ * Names, dates and the reunion belong to the pair, not to one phone.
+ *
+ * They used to live only in the device that typed them, so a reunion set on a
+ * phone was invisible in a browser — correct storage, wrong scope. Newer edit
+ * wins, by the same clock rule the answers use.
+ */
+async function syncSharedSettings(): Promise<void> {
+  const remote = await fetchSettings();
+  const merged = await mergeRemoteSettings(remote.settings, remote.updatedAt);
+  if (merged) return;
+
+  const local = await loadSettings();
+  if (local.updatedAt > remote.updatedAt) await putSettings(local, local.updatedAt);
+}
+
 let running: Promise<void> | null = null;
 
 export function syncNow(dates: string[] = activeDates()): Promise<void> {
@@ -143,6 +169,7 @@ export function syncNow(dates: string[] = activeDates()): Promise<void> {
       for (const date of dates) {
         await applyDay(await fetchDay(date));
       }
+      await syncSharedSettings();
       const now = Date.now();
       await kvSet(LAST_SYNC_KEY, now);
       await refreshPending();

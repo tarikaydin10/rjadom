@@ -225,13 +225,22 @@ muss.
 
 ---
 
-## Das Passwort ändern
+## Die Passwörter ändern
 
-Es steht ausschließlich in `/etc/rjadom.env` auf dem Server — nie im Code, nie
-im Repository, nie im Build. Ändern heißt also:
+**Jede Seite hat ihr eigenes.** Das ist keine Bequemlichkeit, sondern der Grund,
+warum die Seite feststeht: Der Server leitet sie daraus ab, *welches* Passwort
+gepasst hat. Mit einem gemeinsamen Passwort konnte die Seite nur im Header
+behauptet werden — und wer es kannte, konnte sich als die andere Person ausgeben
+und deren Antwort lesen, ohne selbst geschrieben zu haben.
+
+Sie stehen ausschließlich in `/etc/rjadom.env` auf dem Server — nie im Code, nie
+im Repository, nie im Build:
 
 ```bash
-echo 'PAIR_SECRET=DEIN-NEUES-PASSWORT' > /etc/rjadom.env
+cat > /etc/rjadom.env <<'EOF'
+PAIR_SECRET_A=passwort-fuer-hamburg
+PAIR_SECRET_B=passwort-fuer-kaliningrad
+EOF
 chown root:root /etc/rjadom.env && chmod 600 /etc/rjadom.env
 cd /srv/rjadom && docker compose up -d --force-recreate
 ```
@@ -253,6 +262,9 @@ Zwei Dinge, die der Server erzwingt bzw. erlaubt:
   könnte. Nur ehrlich dazu: die Adresse der App ist nicht geheim, in den Logs
   stehen Bots, die jede Domain abklappern, und die Bremse unten kauft gegen ein
   kurzes Wörterbuchwort Zeit, keine Sicherheit.
+* **Beide müssen verschieden sein.** Sind sie gleich (oder wird das alte
+  `PAIR_SECRET` benutzt), warnt der Server beim Start und fällt darauf zurück,
+  dem Client zu glauben, welche Seite er ist.
 * **Beliebige Zeichen**, auch Kyrillisch oder Emoji. Der Client kodiert das
   Passwort, bevor es in den HTTP-Header geht: Header dürfen nur Latin-1
   enthalten, ein russisches Passwort würde sonst schon im Browser scheitern.

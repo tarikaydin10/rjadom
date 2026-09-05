@@ -26,7 +26,23 @@ const PORT = Number(process.env.PORT ?? 8787);
 // and the Node process has no business being reachable from the open internet.
 // Set HOST=0.0.0.0 when running in a container that publishes the port itself.
 const HOST = process.env.HOST ?? '127.0.0.1';
-const SECRET = process.env.PAIR_SECRET ?? '';
+/**
+ * One passphrase per side, which is what makes a side a fact rather than a claim.
+ *
+ * With a single shared secret the member had to be taken from a header, so
+ * anyone holding it could say "I am the other one" and read that person's answer
+ * without ever writing their own — defeating the whole lock-in. Derived from
+ * which secret matched, that is not possible.
+ *
+ * PAIR_SECRET still works as a fallback for both sides so an existing
+ * deployment keeps running; in that mode the header is honoured again, because
+ * the secrets cannot tell the two apart. The startup warning says so.
+ */
+const SECRETS = {
+  a: process.env.PAIR_SECRET_A ?? process.env.PAIR_SECRET ?? '',
+  b: process.env.PAIR_SECRET_B ?? process.env.PAIR_SECRET ?? '',
+};
+const SIDES_DISTINCT = SECRETS.a !== '' && SECRETS.b !== '' && SECRETS.a !== SECRETS.b;
 const DATA_DIR = process.env.DATA_DIR ?? join(HERE, 'data');
 const DATA_FILE = join(DATA_DIR, 'answers.json');
 const STATIC_DIR = process.env.STATIC_DIR ?? join(HERE, '..', 'dist');
@@ -37,18 +53,27 @@ const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? '';
 // VITE_WEATHER_BASE_URL if you point the app at your own Open-Meteo instance.
 const WEATHER_ORIGIN = process.env.WEATHER_ORIGIN ?? 'https://api.open-meteo.com';
 
-if (!SECRET) {
-  console.error('PAIR_SECRET must be set. Refusing to start.');
+if (!SECRETS.a || !SECRETS.b) {
+  console.error('Set PAIR_SECRET_A and PAIR_SECRET_B (or PAIR_SECRET for both). Refusing to start.');
   process.exit(1);
+}
+
+if (!SIDES_DISTINCT) {
+  console.warn(
+    'Both sides share one passphrase, so which side a request comes from is taken from a header ' +
+      'rather than proven. Anyone holding it can read the other side without answering first. ' +
+      'Set PAIR_SECRET_A (Hamburg) and PAIR_SECRET_B (Kaliningrad) to separate values.',
+  );
 }
 
 // A warning, not a refusal. How much passphrase is enough is the owners' call —
 // they know who might come looking — and a server that will not start is a worse
 // outcome than a short passphrase they chose on purpose. Said once, at startup,
 // so the trade-off is on the record rather than forgotten.
-if (SECRET.length < 16) {
+for (const [side, value] of Object.entries(SECRETS)) {
+  if (value.length >= 16) continue;
   console.warn(
-    `PAIR_SECRET is ${SECRET.length} characters. Short passphrases are guessable: ` +
+    `The passphrase for side ${side} is ${value.length} characters. Short passphrases are guessable: ` +
       'the address of this app is not secret, and rate limiting buys time rather than safety. ' +
       'Sixteen or more, ideally several words, if you want the lock to carry the weight.',
   );
@@ -61,15 +86,16 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /* ---------------------------------------------------------------- storage */
 
-let store = { days: {} };
+let store = { days: {}, settings: null };
 let writeChain = Promise.resolve();
 
 async function loadStore() {
   try {
     store = JSON.parse(await readFile(DATA_FILE, 'utf8'));
     store.days ??= {};
+    store.settings ??= null;
   } catch {
-    store = { days: {} };
+    store = { days: {}, settings: null };
   }
 }
 
@@ -173,11 +199,18 @@ function decodeSecret(raw) {
 }
 
 function authenticate(req) {
-  const member = String(req.headers['x-pair-member'] ?? '');
   const secret = decodeSecret(String(req.headers['x-pair-secret'] ?? ''));
-  if (!MEMBERS.has(member)) return null;
-  if (!constantTimeEquals(secret, SECRET)) return null;
-  return member;
+  // Both are always compared, so the reply time does not say which one matched.
+  const matchesA = constantTimeEquals(secret, SECRETS.a);
+  const matchesB = constantTimeEquals(secret, SECRETS.b);
+  if (!matchesA && !matchesB) return null;
+
+  if (SIDES_DISTINCT) return matchesA ? 'a' : 'b';
+
+  // Shared passphrase: the secret cannot tell the sides apart, so fall back to
+  // what the client says it is. Warned about at startup.
+  const claimed = String(req.headers['x-pair-member'] ?? 'a');
+  return MEMBERS.has(claimed) ? claimed : 'a';
 }
 
 /* ------------------------------------------------------------------ shape */
@@ -359,9 +392,44 @@ const server = createServer(async (req, res) => {
   }
 
   // A cheap endpoint whose only job is to tell the unlock screen that the
-  // passphrase is right.
+  // passphrase is right — and which side it belongs to.
   if (url.pathname === '/api/session' && req.method === 'GET') {
     send(res, 200, { ok: true, member });
+    return;
+  }
+
+  /**
+   * Names, dates and the reunion belong to the two of you, not to whichever
+   * device happened to type them. They were per-device, which meant a reunion
+   * set on a phone was invisible everywhere else.
+   */
+  if (url.pathname === '/api/settings') {
+    if (req.method === 'GET') {
+      send(res, 200, store.settings ?? { settings: null, updatedAt: 0 });
+      return;
+    }
+    if (req.method === 'PUT') {
+      let body;
+      try {
+        body = JSON.parse(await readBody(req));
+      } catch {
+        send(res, 400, { error: 'bad body' });
+        return;
+      }
+      if (!body || typeof body.settings !== 'object' || body.settings === null) {
+        send(res, 400, { error: 'bad settings' });
+        return;
+      }
+      const updatedAt = Number.isFinite(body.updatedAt) ? Number(body.updatedAt) : Date.now();
+      // Last write wins, and a slow retry never overwrites a newer edit.
+      if (!store.settings || store.settings.updatedAt <= updatedAt) {
+        store.settings = { settings: body.settings, updatedAt };
+        await persist();
+      }
+      send(res, 200, store.settings);
+      return;
+    }
+    send(res, 405, { error: 'method not allowed' });
     return;
   }
 
