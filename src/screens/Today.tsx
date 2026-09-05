@@ -161,8 +161,14 @@ export function Today() {
       {line && <div className="netline">{line}</div>}
 
       <div className="content">
-        <QuestionBlock question={question} />
-        <AnswerPair day={day} partnerName={partnerName} saving={saving} onSave={onSave} />
+        {/* The question and the two answers are one thing and are kept in one
+            region — the kicker titles it, the band holds it. The reunion is a
+            different subject and stays outside, on bare paper. */}
+        <section className="daily" aria-label={t('question.kickerPlain')}>
+          <QuestionBlock question={question} />
+          <AnswerPair day={day} partnerName={partnerName} saving={saving} onSave={onSave} />
+        </section>
+
         <CountdownCard />
       </div>
     </div>

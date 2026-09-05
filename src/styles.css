@@ -3,7 +3,11 @@
 :root {
   --paper: #f4efe6;
   --card: #fffcf6;
-  --card-muted: #ede4d6;
+  /* Her card. Deeper than it was, because it no longer sits on bare paper but
+     on the daily band, and at the old value it dissolved into it — the pair has
+     to read as an open card beside a closed one, and a closed one you cannot
+     see is not closed, it is missing. */
+  --card-muted: #e6dbc8;
   --bar: #dbd0be;
   --border: #e5daca;
   --ink: #241f1b;
@@ -572,7 +576,29 @@ button.status__now:active {
   padding: 12px var(--gutter) 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  /* Wider than the gap inside the daily band, so the eye reads two groups and
+     not four blocks in a row. Proximity only says anything when the two
+     distances differ. */
+  gap: 20px;
+}
+
+/* The question and its answers, as one region.
+   They were three blocks spaced exactly like everything else on the page: the
+   same gap sat between the question and its own answer as between the answers
+   and the reunion, so there was nothing for the eye to group them by. Common
+   region beats proximity, and this is the region — full width, like the sky
+   band and the tab bar, so the type keeps the gutter alignment it shares with
+   the status line rather than being indented out of it.
+   The tint is the ground's earth, very weak: enough for the answer cards, which
+   are lighter than the paper, to sit ON something instead of floating IN it. */
+.daily {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 calc(-1 * var(--gutter));
+  padding: 16px var(--gutter) 18px;
+  background: rgba(74, 56, 42, 0.045);
 }
 
 .question {
@@ -791,17 +817,18 @@ button.status__now:active {
   cursor: default;
 }
 
-/* Quiet by default: a rule and a line of type, the way a footnote to the day
-   would be set. The date is months away or not yet booked nearly all the time,
-   and a component in that state has no business being the heaviest object on
-   the screen — it was a black slab, the only one in a warm paper palette, and
-   its commonest content was a prompt to go and do something. */
+/* Quiet by default: a line of type, the way a footnote to the day would be set.
+   The date is months away or not yet booked nearly all the time, and a component
+   in that state has no business being the heaviest object on the screen — it was
+   a black slab, the only one in a warm paper palette, and its commonest content
+   was a prompt to go and do something.
+   It carried its own rule until the daily band arrived above it; two edges a
+   finger's width apart, both saying the same thing, is one edge too many. */
 .countdown {
   background: none;
   border: 0;
-  border-top: 1px solid var(--border);
   border-radius: 0;
-  padding: 13px 2px 0;
+  padding: 2px 2px 0;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
