@@ -206,7 +206,7 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
               key={`m${index}`}
               d={segment.d}
               stroke={row.text.arc}
-              strokeOpacity={segment.above ? 0.38 : 0.18}
+              strokeOpacity={segment.above ? 0.25 : 0.05}
               strokeWidth="1"
               strokeDasharray={segment.above ? undefined : '2 4'}
               vectorEffect="non-scaling-stroke"
@@ -217,7 +217,7 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
               key={`s${index}`}
               d={segment.d}
               stroke={row.text.arc}
-              strokeOpacity={segment.above ? 0.62 : 0.3}
+              strokeOpacity={segment.above ? 0.4 : 0.1}
               strokeWidth="1"
               strokeDasharray={segment.above ? undefined : '2 4'}
               vectorEffect="non-scaling-stroke"
@@ -228,9 +228,11 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
             <path
               key={`a${index}`}
               d={d}
-              stroke="rgba(226, 232, 248, 0.9)"
-              strokeOpacity={row.starOpacity * 0.3}
+              stroke="rgba(255, 255, 255, 0.7)"
+              strokeOpacity={row.starOpacity * 0.6}
               strokeWidth="1"
+              strokeDasharray="1 4"
+              strokeLinecap="round"
               vectorEffect="non-scaling-stroke"
             />
           ))}

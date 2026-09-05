@@ -108,10 +108,7 @@ export function southOffset(azimuthFromNorth: number): number {
 export function place(altDeg: number, azimuthFromNorth: number): { x: number; y: number } {
   // Negated: east (a negative offset) belongs on the right.
   const x = Math.min(96, Math.max(4, 50 - (southOffset(azimuthFromNorth) / 180) * 62));
-  const y =
-    altDeg >= 0
-      ? HORIZON - Math.min(1, altDeg / MAX_ALT) * (HORIZON - APEX)
-      : HORIZON + Math.min(1, -altDeg / 18) * DEPTH;
+  const y = HORIZON - (altDeg / MAX_ALT) * (HORIZON - APEX);
   return { x: Number(x.toFixed(2)), y: Number(y.toFixed(1)) };
 }
 
@@ -198,9 +195,8 @@ interface TrackPoint {
   alt: number;
 }
 
-/** Below this the track is not drawn at all: it is deep night, the body is far
- *  under the ground, and its position has been clamped to the band edge. */
-const TRACK_FLOOR = -12;
+/** Draw the full track even when deep underground to complete the astrolabe curve. */
+const TRACK_FLOOR = -90;
 
 function trackSegments(points: TrackPoint[]): SkyPathSegment[] {
   const segments: SkyPathSegment[] = [];

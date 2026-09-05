@@ -315,9 +315,23 @@ textarea {
   0%,
   100% {
     opacity: var(--star-opacity, 1);
+    transform: scale(1);
   }
   50% {
-    opacity: calc(var(--star-opacity, 1) * 0.45);
+    opacity: calc(var(--star-opacity, 1) * 0.25);
+    transform: scale(0.85);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
   }
 }
 
@@ -349,6 +363,7 @@ textarea {
   width: 20px;
   height: 20px;
   margin: -10px 0 0 -10px;
+  animation: pulse 4s ease-in-out infinite;
 }
 
 /* Land. It replaces the scrim that used to darken the top half of the sky so
