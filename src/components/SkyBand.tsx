@@ -3,9 +3,12 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import { CITIES, type CityId } from '../content/cities';
 import type { SkyDay, SkyRow } from '../sky/engine';
 import { STARS } from '../sky/stars';
+import { ASTERISMS, CATALOGUE, VISIBLE_FROM_SOUTH, starPosition } from '../sky/catalogue';
+import { place, southOffset } from '../sky/engine';
 import { MoonDisc } from './MoonDisc';
 import { nextEvent } from '../sky/notes';
 import { conditionKey, observationAt, type WeatherCache } from '../weather/openmeteo';
+import { WeatherLayer } from './WeatherLayer';
 import { clock, roundTemp } from '../lib/format';
 import { useI18n } from '../i18n';
 
@@ -73,12 +76,53 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
     onScrubEnd();
   };
 
+  const observed = {
+    [leftCity]: observationAt(weather, leftCity, ms),
+    [rightCity]: observationAt(weather, rightCity, ms),
+  } as Record<CityId, ReturnType<typeof observationAt>>;
+
   const note = (city: CityId): string => {
     const event = nextEvent(ms, city);
     const when = event.at === null ? t(`sky.${event.key}`) : `${t(`sky.${event.key}`)} ${clock(event.at, CITIES[city].tz, locale)}`;
-    const observation = observationAt(weather, city, ms);
+    const observation = observed[city];
     if (!observation) return when;
     return `${roundTemp(observation.temperature)} ${t(`weather.conditions.${conditionKey(observation.code)}`)} · ${when}`;
+  };
+
+  /**
+   * The named stars, placed for this moment. Only those actually inside the
+   * band's view: it looks south, so anything much past due east or west has run
+   * off the edge of the projection and is left undrawn rather than stacked
+   * against the frame.
+   */
+  const named = CATALOGUE.map((star) => {
+    const position = starPosition(star, ms);
+    const spot = place(position.altitude, position.azimuth);
+    const size = Math.min(3.4, Math.max(1.4, 2.9 - star.mag * 0.45));
+    return {
+      name: star.name,
+      ...spot,
+      size,
+      altitude: position.altitude,
+      visible: position.altitude > 1.5 && Math.abs(southOffset(position.azimuth)) < VISIBLE_FROM_SOUTH,
+      opacity: Math.min(1, Math.max(0.35, 1.05 - star.mag * 0.16)),
+      // Bright stars are steadier; the low ones shimmer.
+      period: 3.4 + (star.mag + 2) * 0.7,
+      delay: -star.ra,
+    };
+  }).filter((star) => star.visible);
+
+  const byName = new Map(named.map((star) => [star.name, star]));
+  const asterismPaths = ASTERISMS.map((indices) => {
+    const points = indices.map((i) => byName.get(CATALOGUE[i]!.name));
+    // Drawn only when the whole shape is up; half a constellation is a scribble.
+    if (points.some((point) => point === undefined)) return null;
+    return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p!.x.toFixed(2)} ${p!.y.toFixed(1)}`).join(' ');
+  }).filter((d): d is string => d !== null);
+
+  const conditionOf = (city: CityId): string | null => {
+    const observation = observed[city];
+    return observation ? conditionKey(observation.code) : null;
   };
 
   const column = (city: CityId, side: 'left' | 'right') => (
@@ -115,26 +159,32 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
           horizon at 186, city labels at 52 — so it sits in a frame pushed clear
           of whatever the phone hides at the top. Only the colour layers and the
           scrim above fill the whole band and run up under the island. */}
+      {/* Outside the frame on purpose: the field is measured in percentages of
+          the sky rather than in band pixels, so it fills right up under a
+          phone's island instead of stopping at a line across the top. */}
+      <div className="sky__field" style={{ opacity: row.starOpacity }}>
+        {STARS.map((star, index) => (
+          <span
+            key={index}
+            className="sky__star"
+            style={
+              {
+                left: `${star.x}%`,
+                top: `${star.y}%`,
+                width: star.size,
+                height: star.size,
+                background: `rgb(${star.tint})`,
+                boxShadow: star.glow ? `0 0 ${star.glow}px rgba(${star.tint}, 0.5)` : undefined,
+                '--star-opacity': star.opacity,
+                animationDuration: `${star.period}s`,
+                animationDelay: `${star.delay}s`,
+              } as React.CSSProperties
+            }
+          />
+        ))}
+      </div>
+
       <div className="sky__frame">
-        <div className="sky__layer" style={{ opacity: row.starOpacity }}>
-          {STARS.map((star, index) => (
-            <span
-              key={index}
-              className="sky__star"
-              style={
-                {
-                  left: `${star.x}%`,
-                  top: star.y,
-                  width: star.size,
-                  height: star.size,
-                  '--star-opacity': star.opacity,
-                  animationDuration: `${star.period}s`,
-                  animationDelay: `${star.delay}s`,
-                } as React.CSSProperties
-              }
-            />
-          ))}
-        </div>
 
         {/* The tracks the sun and moon actually take today, computed from the same
             positions they are drawn at — so a body sits on its own line by
@@ -175,10 +225,44 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
               vectorEffect="non-scaling-stroke"
             />
           ))}
-          <line x1="0" y1="186" x2="100" y2="186" stroke={row.text.horizon} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          {row.starOpacity > 0.05 &&
+          asterismPaths.map((d, index) => (
+            <path
+              key={`a${index}`}
+              d={d}
+              stroke="rgba(226, 232, 248, 0.9)"
+              strokeOpacity={row.starOpacity * 0.3}
+              strokeWidth="1"
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+        <line x1="0" y1="186" x2="100" y2="186" stroke={row.text.horizon} strokeWidth="1" vectorEffect="non-scaling-stroke" />
         </svg>
 
-        <MoonDisc
+        {row.starOpacity > 0.05 && (
+        <div className="sky__layer" style={{ opacity: row.starOpacity }}>
+          {named.map((star) => (
+            <span
+              key={star.name}
+              className="sky__star sky__star--named"
+              style={
+                {
+                  left: `${star.x}%`,
+                  top: star.y,
+                  width: star.size,
+                  height: star.size,
+                  boxShadow: `0 0 ${(star.size * 1.6).toFixed(1)}px rgba(255, 250, 240, 0.55)`,
+                  '--star-opacity': star.opacity,
+                  animationDuration: `${star.period}s`,
+                  animationDelay: `${star.delay}s`,
+                } as React.CSSProperties
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      <MoonDisc
           size={16}
           illuminated={row.moon.illuminated}
           waxing={row.moon.waxing}
@@ -197,7 +281,10 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
           }}
         />
 
-        <div className="sky__cities">
+        <WeatherLayer condition={conditionOf(leftCity)} city={leftCity} side="left" isDay={row.isDay} />
+      <WeatherLayer condition={conditionOf(rightCity)} city={rightCity} side="right" isDay={row.isDay} />
+
+      <div className="sky__cities">
           {column(leftCity, 'left')}
           {column(rightCity, 'right')}
         </div>

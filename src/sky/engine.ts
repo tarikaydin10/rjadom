@@ -94,11 +94,11 @@ export function gradientFor(altDeg: number): string {
  * 270 W); `southOffset` turns that into a signed angle either side of south.
  * Vertical position is the design's compressed scale, not a projection.
  */
-function southOffset(azimuthFromNorth: number): number {
+export function southOffset(azimuthFromNorth: number): number {
   return ((((azimuthFromNorth - 180) % 360) + 540) % 360) - 180;
 }
 
-function place(altDeg: number, azimuthFromNorth: number): { x: number; y: number } {
+export function place(altDeg: number, azimuthFromNorth: number): { x: number; y: number } {
   // Negated: east (a negative offset) belongs on the right.
   const x = Math.min(96, Math.max(4, 50 - (southOffset(azimuthFromNorth) / 180) * 62));
   const y =

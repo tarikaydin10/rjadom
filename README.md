@@ -24,11 +24,37 @@ PAIR_SECRET="$(node -e "console.log(crypto.randomBytes(24).toString('base64url')
 Beim ersten Öffnen fragt die App **einmal** nach der Passphrase (dem
 `PAIR_SECRET`) und danach nie wieder auf diesem Gerät.
 
-Für die Entwicklung:
+## Lokal starten
+
+Zwei Terminals, Node ≥ 22, sonst nichts. Vite leitet `/api` automatisch an den
+Server auf :8787 weiter, du brauchst also keine Konfiguration.
+
+**PowerShell (Windows)**
+
+```powershell
+npm install
+# Terminal 1 — der Server
+$env:PAIR_SECRET_A="hamburg-passwort"; $env:PAIR_SECRET_B="kaliningrad-passwort"; npm run server
+# Terminal 2 — die App mit Hot Reload
+npm run dev        # → http://localhost:5173
+```
+
+**bash / zsh (macOS, Linux)**
 
 ```bash
-npm run server                    # Terminal 1 – API auf :8787
-npm run dev                       # Terminal 2 – Vite auf :5173, /api wird geproxyt
+npm install
+PAIR_SECRET_A=hamburg-passwort PAIR_SECRET_B=kaliningrad-passwort npm run server
+npm run dev
+```
+
+Beim Öffnen fragt die App nach dem Passwort — welches du eingibst, entscheidet,
+als welche Seite du drin bist. Die lokalen Daten landen in `server/data/` und
+haben mit dem Server in Produktion nichts zu tun.
+
+Nur den fertigen Stand ansehen, ohne Hot Reload:
+
+```bash
+npm run build && npm run server    # → http://localhost:8787
 ```
 
 Weitere Skripte: `npm run typecheck`, `npm run icons` (App-Icons neu zeichnen),

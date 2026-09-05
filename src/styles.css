@@ -144,6 +144,119 @@ textarea {
    nothing; each has its own rhythm and starts somewhere else in it, or they
    would pulse in unison like a warning light. Turned off entirely for anyone
    who has asked for less motion — see the reduced-motion rule below. */
+/* ---------- weather ---------- */
+
+/* All four move by transform alone, so the compositor carries them and a phone
+   does not warm up drawing drizzle. Motion stops entirely under the
+   reduced-motion rule at the end of this file, leaving the shapes in place. */
+/* Reaches the horizon and no further: below it is ground, not weather. */
+.wx__wash {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 186px;
+}
+
+.wx__cloud {
+  position: absolute;
+  left: 0;
+  border-radius: 50%;
+  filter: blur(5px);
+  will-change: transform;
+  animation-name: drift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.wx__haze {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 16px;
+  filter: blur(6px);
+  animation-name: haze;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+.wx__drop {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  border-radius: 1px;
+  animation-name: fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.wx__flake {
+  position: absolute;
+  top: 0;
+  border-radius: 50%;
+  animation-name: flutter;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes drift {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(520%);
+  }
+}
+
+@keyframes haze {
+  from {
+    transform: translateX(-6%);
+  }
+  to {
+    transform: translateX(6%);
+  }
+}
+
+/* Starts under the note line and stops at the horizon: rain falls in the sky,
+   not across the city names or into the ground. */
+@keyframes fall {
+  from {
+    transform: translateY(120px);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(186px);
+    opacity: 0;
+  }
+}
+
+@keyframes flutter {
+  from {
+    transform: translate(0, 116px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(7px, 152px);
+  }
+  85% {
+    opacity: 1;
+  }
+  to {
+    transform: translate(0, 186px);
+    opacity: 0;
+  }
+}
+
 /* Everything positioned in band coordinates — horizon at 186, city labels at
    52, the tracks, the stars — lives in here, pushed down past the island. Only
    the colour layers behind it fill the whole band. */
@@ -153,6 +266,17 @@ textarea {
   right: 0;
   top: var(--safe-top);
   height: var(--band-height);
+}
+
+/* Spans the whole sky, horizon to the very top of the band — under the island
+   included — because the field is measured in percentages, not band pixels. */
+.sky__field {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(var(--safe-top) + 186px);
+  overflow: hidden;
 }
 
 .sky__star {
