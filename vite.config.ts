@@ -20,7 +20,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['fonts/*.woff2', 'icons/*.png'],
+      includeAssets: ['fonts/*.woff2', 'icons/*.png', 'favicon.svg'],
       manifest: {
         id: '/',
         name: 'Ryadom · Рядом',
