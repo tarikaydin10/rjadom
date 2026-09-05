@@ -8,6 +8,8 @@ import { isUnlocked, subscribePair } from './data/pair';
 import { startSync } from './data/sync';
 import { prefetchDays } from './sky/engine';
 
+import { ViewportDebug } from './components/ViewportDebug';
+
 function useUnlocked(): boolean {
   return useSyncExternalStore(subscribePair, isUnlocked, () => true);
 }
@@ -28,6 +30,7 @@ export function App() {
   if (!unlocked) {
     return (
       <div className="app">
+        <ViewportDebug />
         <Lock onUnlocked={() => force((n) => n + 1)} />
       </div>
     );
@@ -35,6 +38,7 @@ export function App() {
 
   return (
     <div className="app">
+      <ViewportDebug />
       {tab === 'today' && <Today />}
       {tab === 'map' && <Placeholder title="tabs.map" note="soon.map" />}
       {tab === 'chronicle' && <Placeholder title="tabs.chronicle" note="soon.chronicle" />}

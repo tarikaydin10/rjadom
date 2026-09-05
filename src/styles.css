@@ -23,9 +23,19 @@
   --gutter: 22px;
   --radius-card: 14px;
 
-  /* Die dynamische Höhe der Tab-Leiste: 38px im Browser (Safari), aber im PWA-Modus
-     wird sie nur so hoch wie nötig (24px + Safe Area), damit sie nicht wuchtig wirkt. */
-  --tabbar-height: max(38px, calc(24px + var(--safe-bottom)));
+  /* Die Tab-Leiste besteht aus zwei getrennten Dingen, und genau das war der
+     Fehler an der alten Formel `max(38px, calc(24px + safe-bottom))`: sie hat
+     beide in eine Zahl geworfen und dabei das Gegenteil ihres Kommentars getan.
+     Im Browser meldet iOS safe-bottom als 0 — die Safari-Leiste steht ja schon
+     dort — und es kamen 38px heraus; im Standalone springt der Wert auf 34px,
+     und max() wählte 58px. Die Leiste wurde also ausgerechnet dort am höchsten,
+     wo sie schlank sein sollte.
+
+     Jetzt getrennt: --tabbar-content ist die Zeile mit den Beschriftungen,
+     --safe-bottom der Streifen, den der Home-Indicator ohnehin beansprucht und
+     in den nichts Anklickbares gehört. */
+  --tabbar-content: 38px;
+  --tabbar-height: calc(var(--tabbar-content) + var(--safe-bottom));
 
   /* --band-height and --horizon are deliberately absent here. They are the
      band's own geometry, they belong to sky/engine.ts, which draws the sun and
@@ -45,6 +55,15 @@
   --safe-right: env(safe-area-inset-right, 0px);
 
   color-scheme: light;
+}
+
+/* Auf dem Home-Bildschirm gibt es keine Browser-Leiste mehr, die den unteren
+   Rand füllt — der Home-Indicator tut es. Die Beschriftungszeile darf dann
+   kürzer ausfallen, sonst addieren sich beide zu einem wuchtigen Block. */
+@media (display-mode: standalone) {
+  :root {
+    --tabbar-content: 26px;
+  }
 }
 
 * {
