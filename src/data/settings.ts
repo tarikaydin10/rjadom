@@ -22,8 +22,6 @@ export interface PersonName {
 export interface Settings {
   /** Who lives where. Keyed by city, not by "you" and "them". */
   names: Record<CityId, PersonName>;
-  /** Day 1 of the counter above the question. Null hides the counter. */
-  startDate: string | null;
   reunion: { date: string | null; city: CityId };
   /**
    * When these were last edited, anywhere.
@@ -40,7 +38,6 @@ export const DEFAULT_SETTINGS: Settings = {
     hamburg: { latin: 'Tarik', cyrillic: 'Тарик' },
     kaliningrad: { latin: 'Mila', cyrillic: 'Мила' },
   },
-  startDate: null,
   reunion: { date: null, city: 'hamburg' },
   updatedAt: 0,
 };
@@ -92,7 +89,6 @@ function migrate(stored: Partial<Settings> & LegacySettings): Settings {
 
   return {
     names,
-    startDate: stored.startDate ?? DEFAULT_SETTINGS.startDate,
     reunion: { ...DEFAULT_SETTINGS.reunion, ...stored.reunion },
     updatedAt: stored.updatedAt ?? 0,
   };

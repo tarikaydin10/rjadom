@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SkyBand } from '../components/SkyBand';
 import { QuestionBlock } from '../components/QuestionBlock';
 import { AnswerPair } from '../components/AnswerPair';
@@ -8,7 +8,7 @@ import { useNow, useOnline, useSyncStatus, useWeather } from '../lib/hooks';
 import { useSettings } from '../data/settings-context';
 import { BAND_ORDER } from '../content/cities';
 import { skyDay, slotOf, statusFor } from '../sky/engine';
-import { dateKey, dayNumber } from '../lib/day';
+import { dateKey } from '../lib/day';
 import { questionFor } from '../content/questions';
 import { displayName, sidesFor } from '../data/settings';
 import { getPair } from '../data/pair';
@@ -17,6 +17,13 @@ import { dayAndMonth, timeOfDay } from '../lib/format';
 import { subscribeSync } from '../data/sync';
 
 const EMPTY_DAY: DayAnswers = { mine: null, theirs: null, partner: null };
+
+/**
+ * How far the sky can be wound. Sun and moon are arithmetic and would happily go
+ * anywhere; the weather reaches seven days, and past a fortnight this stops
+ * being a gesture and starts being a date picker.
+ */
+const SCRUB_LIMIT_MS = 14 * 24 * 60 * 60 * 1000;
 
 export function Today() {
   const { t, locale } = useI18n();
@@ -48,15 +55,57 @@ export function Today() {
   const row = table.rows[slotOf(shownMs)] ?? table.rows[0]!;
   const scrubbedToAnotherDay = scrubMs !== null && dateKey(shownMs) !== today;
 
-  /**
-   * How far the sky can be wound. Sun and moon are arithmetic and would happily
-   * go anywhere; the weather reaches seven days, and past a fortnight this stops
-   * being a gesture and starts being a date picker.
-   */
   const scrubTo = (ms: number) => {
-    const limit = 14 * 24 * 60 * 60 * 1000;
+    cancelRewind();
+    const limit = SCRUB_LIMIT_MS;
     setScrubMs(Math.min(now + limit, Math.max(now - limit, ms)));
   };
+
+  /**
+   * Coming back to now is a journey, not a jump.
+   *
+   * Snapping cuts from one sky to another and loses the one thing worth seeing:
+   * the light running back across both cities. So it winds — longer for a longer
+   * way, but never long enough to become a wait. A reader who has asked not to be
+   * moved gets the jump instead.
+   */
+  const rewind = useRef<number | null>(null);
+  const cancelRewind = () => {
+    if (rewind.current !== null) cancelAnimationFrame(rewind.current);
+    rewind.current = null;
+  };
+
+  const backToNow = () => {
+    const from = scrubMs;
+    if (from === null) return;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduced) {
+      setScrubMs(null);
+      return;
+    }
+
+    const started = performance.now();
+    const distance = Math.abs(Date.now() - from);
+    // A few hours winds back briskly; a fortnight takes a breath longer.
+    const duration = Math.min(2200, 600 + (distance / (24 * 60 * 60 * 1000)) * 260);
+    const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
+
+    const step = (frame: number) => {
+      const progress = Math.min(1, (frame - started) / duration);
+      // Aimed at the live clock, not a frozen one, so it lands on now rather
+      // than on where now was when the finger lifted.
+      setScrubMs(from + (Date.now() - from) * ease(progress));
+      if (progress < 1) {
+        rewind.current = requestAnimationFrame(step);
+        return;
+      }
+      rewind.current = null;
+      setScrubMs(null);
+    };
+    rewind.current = requestAnimationFrame(step);
+  };
+
+  useEffect(() => cancelRewind, []);
 
   // Layout is geographic and identical on both devices; only the wording below
   // depends on which side of the sky the reader is standing on — and that comes
@@ -103,7 +152,7 @@ export function Today() {
             {t('sky.now')}
           </span>
         ) : (
-          <button className="status__now" onClick={() => setScrubMs(null)}>
+          <button className="status__now" onClick={backToNow}>
             {`${scrubbedToAnotherDay ? `${dayAndMonth(shownMs, locale)} ` : ''}${timeOfDay(shownMs, locale)} · ${t('sky.backToNow')}`}
           </button>
         )}
@@ -112,12 +161,9 @@ export function Today() {
       {line && <div className="netline">{line}</div>}
 
       <div className="content">
-        <QuestionBlock
-          question={question}
-          day={settings.startDate ? dayNumber(settings.startDate, today) : null}
-        />
+        <QuestionBlock question={question} />
         <AnswerPair day={day} partnerName={partnerName} saving={saving} onSave={onSave} />
-        <CountdownCard date={settings.reunion.date} city={settings.reunion.city} />
+        <CountdownCard />
       </div>
     </>
   );

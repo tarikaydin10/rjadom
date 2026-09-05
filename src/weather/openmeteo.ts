@@ -17,7 +17,12 @@ import { kvGet, kvSet } from '../data/db';
  * without touching this file.
  */
 
-const BASE = (import.meta.env.VITE_WEATHER_BASE_URL as string | undefined) ?? 'https://api.open-meteo.com';
+// `||`, not `??`. A build environment that defines the variable but leaves it
+// empty — which is exactly what a GitHub workflow does for an unset repository
+// variable — yields "", and "" is not nullish. The public endpoint then
+// disappeared from the bundle and the app asked its own origin for /v1/forecast,
+// got the application shell back as HTML, and quietly showed no weather at all.
+const BASE = (import.meta.env.VITE_WEATHER_BASE_URL as string | undefined) || 'https://api.open-meteo.com';
 const CACHE_KEY = 'weather';
 const FORECAST_DAYS = 7;
 const REFRESH_AFTER_MS = 15 * 60 * 1000;

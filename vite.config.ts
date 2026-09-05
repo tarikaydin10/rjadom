@@ -5,7 +5,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 // Everything the app needs at runtime is served from its own origin: fonts, icons,
 // code. The only outbound call is the weather endpoint, and its base URL is
 // configurable so the deployment can point at a self-hosted Open-Meteo instance.
-const weatherBase = process.env.VITE_WEATHER_BASE_URL ?? 'https://api.open-meteo.com';
+// `||` for the same reason as in the weather module: an unset repository
+// variable arrives as an empty string, and the runtime cache rule would then be
+// built for the wrong origin.
+const weatherBase = process.env.VITE_WEATHER_BASE_URL || 'https://api.open-meteo.com';
 
 export default defineConfig({
   // In development the API lives in the reference server next door; in

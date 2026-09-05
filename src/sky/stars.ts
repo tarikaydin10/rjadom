@@ -16,6 +16,9 @@ export interface Star {
   y: number;
   size: number;
   opacity: number;
+  /** Seconds for one twinkle, and where in that cycle this star starts. */
+  period: number;
+  delay: number;
 }
 
 /** Mulberry32: tiny, fast, and identical everywhere. */
@@ -42,7 +45,12 @@ function scatter(count: number): Star[] {
     const depth = random() ** 1.7;
     const y = 8 + depth * (HORIZON - 26);
     const bright = random();
+    // Scintillation is atmosphere, so it is strongest low down where you are
+    // looking through the most of it — the same reason those stars are fainter.
+    const period = Number((3.2 + random() * 4.5).toFixed(2));
     stars.push({
+      period,
+      delay: Number((-random() * period).toFixed(2)),
       x: Number((random() * 100).toFixed(2)),
       y: Number(y.toFixed(1)),
       // A few large and bright, many small and faint — roughly how a sky reads.

@@ -58,7 +58,6 @@ export const en = {
   },
 
   question: {
-    kicker: 'Today · Day {day}',
     kickerPlain: 'Today',
     loading: 'Loading the question …',
   },
@@ -82,7 +81,7 @@ export const en = {
     // The number is rendered separately at 40px, so these are the unit alone.
     days: { one: 'day', few: 'days', many: 'days', other: 'days' } as Plural,
     today: 'today',
-    unset: 'no date set',
+    unset: 'Tap to set a date',
   },
 
   net: {
@@ -103,10 +102,8 @@ export const en = {
     names: 'Names',
     yourName: 'Your name',
     partnerName: 'Their name',
-    dates: 'Dates',
-    since: 'Together since',
     reunion: 'Next reunion',
-    reunionCity: 'Reunion city',
+    reunionCity: 'City',
     sides: 'Sides',
     yourCity: 'You are in',
     storage: 'Data',
@@ -186,7 +183,6 @@ export const ru: DeepStringShape<typeof en> = {
   },
 
   question: {
-    kicker: 'Сегодня · День {day}',
     kickerPlain: 'Сегодня',
     loading: 'Загружаем вопрос …',
   },
@@ -209,7 +205,7 @@ export const ru: DeepStringShape<typeof en> = {
     kicker: 'Встреча',
     days: { one: 'день', few: 'дня', many: 'дней', other: 'дня' },
     today: 'сегодня',
-    unset: 'дата не выбрана',
+    unset: 'Нажми, чтобы выбрать дату',
   },
 
   net: {
@@ -230,10 +226,8 @@ export const ru: DeepStringShape<typeof en> = {
     names: 'Имена',
     yourName: 'Твоё имя',
     partnerName: 'Её или его имя',
-    dates: 'Даты',
-    since: 'Вместе с',
     reunion: 'Следующая встреча',
-    reunionCity: 'Город встречи',
+    reunionCity: 'Город',
     sides: 'Стороны',
     yourCity: 'Ты в городе',
     storage: 'Данные',

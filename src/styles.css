@@ -119,10 +119,29 @@ textarea {
   mask-image: linear-gradient(90deg, rgba(0, 0, 0, 0) 16%, rgba(0, 0, 0, 1) 78%);
 }
 
+/* Stars twinkle, because still ones read as pixels rather than sky. Only
+   opacity is animated, so the compositor handles it and ninety of them cost
+   nothing; each has its own rhythm and starts somewhere else in it, or they
+   would pulse in unison like a warning light. Turned off entirely for anyone
+   who has asked for less motion — see the reduced-motion rule below. */
 .sky__star {
   position: absolute;
   border-radius: 50%;
   background: #fff6e6;
+  opacity: var(--star-opacity, 1);
+  animation-name: twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: var(--star-opacity, 1);
+  }
+  50% {
+    opacity: calc(var(--star-opacity, 1) * 0.45);
+  }
 }
 
 .sky__arc {
@@ -402,6 +421,26 @@ textarea {
   justify-content: space-between;
   gap: 14px;
   flex-shrink: 0;
+  width: 100%;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Editing happens in place, so the card grows downward instead of sending you
+   to a settings screen for something you were already looking at. */
+.countdown--editing {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  cursor: default;
+}
+
+.countdown__input {
+  background: rgba(255, 252, 246, 0.06);
+  border-color: rgba(183, 158, 134, 0.4);
+  color: var(--paper);
 }
 
 .countdown__kicker {

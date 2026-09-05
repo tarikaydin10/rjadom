@@ -7,14 +7,17 @@ import { syncConfigured } from '../data/api';
 import { syncNow } from '../data/sync';
 import { useSyncStatus } from '../lib/hooks';
 import { CITIES, type CityId } from '../content/cities';
-import { PAIR_TIMEZONE, isValidDateKey } from '../lib/day';
 import { timeOfDay } from '../lib/format';
 import type { Settings } from '../data/settings';
 
 /**
- * The settings screen, and the reason the language requirement is met in full:
- * the system language decides by default, and this is where that can be
- * overridden — per device, permanently.
+ * Settings, and only settings.
+ *
+ * The reunion used to live here and no longer does — it is content, not a
+ * preference, and it is edited on the card that shows it. What remains is what
+ * actually belongs in a menu: the language, who is called what, and the state of
+ * the connection. There is no side chooser either: which city you are follows
+ * from the passphrase you unlocked with.
  */
 export function Us() {
   const { t, locale, preference, setPreference } = useI18n();
@@ -32,14 +35,7 @@ export function Us() {
   };
 
   const commit = () => {
-    void update({
-      ...draft,
-      startDate: draft.startDate && isValidDateKey(draft.startDate) ? draft.startDate : null,
-      reunion: {
-        ...draft.reunion,
-        date: draft.reunion.date && isValidDateKey(draft.reunion.date) ? draft.reunion.date : null,
-      },
-    }).then(() => setSaved(true));
+    void update(draft).then(() => setSaved(true));
   };
 
   const languages: { id: LocalePreference; label: string }[] = [
@@ -47,20 +43,6 @@ export function Us() {
     { id: 'en', label: t('settings.english') },
     { id: 'ru', label: t('settings.russian') },
   ];
-
-  const cityChoice = (value: CityId, onPick: (city: CityId) => void) => (
-    <div className="segment">
-      {(Object.keys(CITIES) as CityId[]).map((id) => (
-        <button
-          key={id}
-          className={id === value ? 'segment__item segment__item--active' : 'segment__item'}
-          onClick={() => onPick(id)}
-        >
-          {CITIES[id].label}
-        </button>
-      ))}
-    </div>
-  );
 
   return (
     <div className="screen">
@@ -83,8 +65,10 @@ export function Us() {
 
       <div className="section">
         <span className="section__title">{t('settings.names')}</span>
-        {/* Keyed by city, not by "you" and "them": the same settings are read on
-            both phones, and each of you is "you" on your own. */}
+        {/* Keyed by city, not by "you" and "them": both phones read the same
+            settings, and each of you is "you" on your own. Two spellings each,
+            because a name can be written in both alphabets without being
+            translated — shown in whichever matches the interface language. */}
         {(Object.keys(CITIES) as CityId[]).map((id) => (
           <div className="field" key={id}>
             <span className="field__label">
@@ -107,39 +91,12 @@ export function Us() {
                 onChange={(e) =>
                   patch({ names: { ...draft.names, [id]: { ...draft.names[id], cyrillic: e.target.value } } })
                 }
-                placeholder={id === 'hamburg' ? 'Тарик' : 'Мила'}
+                placeholder={id === 'hamburg' ? 'Тарык' : 'Мила'}
                 lang="ru"
               />
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="section">
-        <span className="section__title">{t('settings.dates')}</span>
-        <div className="field">
-          <span className="field__label">{t('settings.since')}</span>
-          <input
-            className="field__input"
-            type="date"
-            value={draft.startDate ?? ''}
-            onChange={(e) => patch({ startDate: e.target.value || null })}
-          />
-        </div>
-        <div className="field">
-          <span className="field__label">{t('settings.reunion')}</span>
-          <input
-            className="field__input"
-            type="date"
-            value={draft.reunion.date ?? ''}
-            onChange={(e) => patch({ reunion: { ...draft.reunion, date: e.target.value || null } })}
-          />
-        </div>
-        <div className="field">
-          <span className="field__label">{t('settings.reunionCity')}</span>
-          {cityChoice(draft.reunion.city, (city) => patch({ reunion: { ...draft.reunion, city } }))}
-        </div>
-        <p className="hint">{t('settings.dayBoundary', { tz: PAIR_TIMEZONE })}</p>
       </div>
 
       <div className="section">
@@ -162,7 +119,7 @@ export function Us() {
       {pair && (
         <div className="section">
           <span className="section__title">{t('settings.device')}</span>
-          <p className="hint">{CITIES[pair.member === 'a' ? 'hamburg' : 'kaliningrad'].label}</p>
+          <p className="hint">{CITIES[cityOf(pair.member)].label}</p>
           <p className="hint">{t('settings.forgetHint')}</p>
           <button className="button button--ghost" style={{ alignSelf: 'flex-start' }} onClick={clearPair}>
             {t('settings.forget')}

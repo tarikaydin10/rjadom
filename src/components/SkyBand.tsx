@@ -114,13 +114,17 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
           <span
             key={index}
             className="sky__star"
-            style={{
-              left: `${star.x}%`,
-              top: star.y,
-              width: star.size,
-              height: star.size,
-              opacity: star.opacity,
-            }}
+            style={
+              {
+                left: `${star.x}%`,
+                top: star.y,
+                width: star.size,
+                height: star.size,
+                '--star-opacity': star.opacity,
+                animationDuration: `${star.period}s`,
+                animationDelay: `${star.delay}s`,
+              } as React.CSSProperties
+            }
           />
         ))}
       </div>
