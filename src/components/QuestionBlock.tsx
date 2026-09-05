@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useI18n } from '../i18n';
 import { questionText, type Question } from '../content/questions';
 
@@ -13,8 +14,12 @@ interface Props {
  * English/Russian — the reader's language is the large line, the other one sits
  * under it. It is also what makes the screen work when the two of them are
  * looking at it together.
+ *
+ * Memoised, along with the rest of the page below the band: winding the sky
+ * through a fortnight changes nothing here, and re-rendering it on every frame
+ * of that gesture is what a scrub cannot afford.
  */
-export function QuestionBlock({ question }: Props) {
+export const QuestionBlock = memo(function QuestionBlock({ question }: Props) {
   const { t, locale, other } = useI18n();
 
   return (
@@ -28,4 +33,4 @@ export function QuestionBlock({ question }: Props) {
       </span>
     </div>
   );
-}
+});

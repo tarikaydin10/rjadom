@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useI18n } from '../i18n';
 import { CITIES, type CityId } from '../content/cities';
 import { dayAndMonth } from '../lib/format';
@@ -26,7 +26,7 @@ import { getPair } from '../data/pair';
 /** Where the reunion stops being a fact and starts being an event. */
 const NEAR_DAYS = 30;
 
-export function CountdownCard() {
+export const CountdownCard = memo(function CountdownCard() {
   const { t, tp, locale } = useI18n();
   const { settings, update } = useSettings();
   const [editing, setEditing] = useState(false);
@@ -124,4 +124,4 @@ export function CountdownCard() {
       )}
     </button>
   );
-}
+});

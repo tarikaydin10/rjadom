@@ -16,6 +16,8 @@
  * field fills whatever the band turns out to be — including the strip that runs
  * up under a phone's island, which pixel coordinates left empty.
  */
+import { seeded } from '../lib/random';
+
 export interface Star {
   /** Both percentages: of the band's width, and of the sky above the horizon. */
   x: number;
@@ -29,18 +31,6 @@ export interface Star {
   tint: string;
   /** Halo in pixels; only the brightest get one. */
   glow: number;
-}
-
-/** Mulberry32: tiny, fast, and identical everywhere. */
-function seeded(seed: number): () => number {
-  let a = seed;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 /** Real starlight is not white: hot stars run blue, old ones amber. */

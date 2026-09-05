@@ -1,7 +1,6 @@
 import { skyDay } from './engine';
 import type { CityId } from '../content/cities';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { DAY_MS } from '../lib/day';
 
 export type EventKey = 'sunrise' | 'sunset' | 'polarDay' | 'polarNight';
 

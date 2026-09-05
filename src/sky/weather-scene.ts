@@ -6,9 +6,11 @@
  * haze low down. Enough to know at a glance that it is raining over her, not
  * enough to compete with the sun for attention.
  *
- * Scattered once from a fixed seed, like the stars: weather that reshuffled on
- * every repaint would be worse than none.
+ * Scattered once from a fixed seed, like the stars — see `lib/random.ts`.
  */
+import { seeded } from '../lib/random';
+import { HORIZON } from './engine';
+
 export interface Cloud {
   /** Percent of the band's width, and pixels down from its top. */
   y: number;
@@ -44,17 +46,6 @@ export interface WeatherScene {
   dimming: number;
 }
 
-function seeded(seed: number): () => number {
-  let a = seed;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 /** Cloud, rain and snow counts per condition. */
 const RECIPES: Record<string, { clouds: number; cover: number; rain: number; snow: number; haze: number }> = {
   clear: { clouds: 0, cover: 0, rain: 0, snow: 0, haze: 0 },
@@ -71,7 +62,6 @@ const RECIPES: Record<string, { clouds: number; cover: number; rain: number; sno
   thunderstorm: { clouds: 5, cover: 0.75, rain: 26, snow: 0, haze: 0 },
 };
 
-const HORIZON = 186;
 const cache = new Map<string, WeatherScene>();
 
 export function weatherScene(condition: string, seedKey: string): WeatherScene {
@@ -87,8 +77,9 @@ export function weatherScene(condition: string, seedKey: string): WeatherScene {
   const clouds: Cloud[] = Array.from({ length: recipe.clouds }, () => {
     const scale = 0.6 + random() * 0.9;
     return {
-      // Below the note line, above the horizon: the strip the band leaves free.
-      y: Number((112 + random() * 48).toFixed(1)),
+      // The middle of the sky, expressed as a fraction of it: high enough to
+      // clear the ground, low enough to leave the top of the band to the stars.
+      y: Number((HORIZON * (0.4 + random() * 0.28)).toFixed(1)),
       width: Number((90 * scale).toFixed(0)),
       height: Number((26 * scale).toFixed(0)),
       opacity: Number(Math.min(0.9, recipe.cover * (0.95 + random() * 0.5)).toFixed(2)),

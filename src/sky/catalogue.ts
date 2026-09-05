@@ -56,12 +56,21 @@ export const CATALOGUE: CatalogueStar[] = [
   { name: 'Spica', ra: 13.42, dec: -11.161, mag: 0.98 },
 ];
 
-/** Indices into CATALOGUE, as the lines an eye draws between them. */
+/**
+ * Indices into CATALOGUE, as the lines an eye draws between them.
+ *
+ * Two figures, and only two, because only two of them are wholly above this
+ * horizon at once for long enough to be worth drawing: Orion, whose stick figure
+ * is the conventional one — the two shoulders, the belt between them, and a leg
+ * down from each shoulder past the belt — and the Summer Triangle, which is an
+ * asterism spanning three constellations rather than a constellation itself.
+ */
 export const ASTERISMS: number[][] = [
-  [2, 3, 4], // Orion's belt
-  [0, 4, 5], // shoulder to belt to foot
-  [1, 2, 6], // the other shoulder and foot
-  [7, 8, 9, 7], // the Summer Triangle, closed
+  [0, 1], // Orion's shoulders: Betelgeuse to Bellatrix
+  [2, 3, 4], // the belt: Mintaka, Alnilam, Alnitak
+  [0, 4, 5], // right shoulder down through the belt to Saiph
+  [1, 2, 6], // left shoulder down through the belt to Rigel
+  [7, 8, 9, 7], // the Summer Triangle: Vega, Deneb, Altair, closed
 ];
 
 const RAD = Math.PI / 180;
@@ -92,8 +101,11 @@ export function starPosition(star: CatalogueStar, ms: number): { altitude: numbe
 }
 
 /**
- * How far from due south, in degrees, signed. Beyond about this the band's
- * horizontal axis has run out and positions get clamped to the edge, so a star
- * out there is simply not drawn rather than stacked against the frame.
+ * How far from due south, in degrees, signed, a star is still drawn.
+ *
+ * Not a limit of the projection — that reaches all the way round now — but of
+ * the picture: the band is a view south, and a star two-thirds of the way to
+ * due north is behind the reader, squashed into the last few percent of the
+ * width where it can only crowd the frame.
  */
 export const VISIBLE_FROM_SOUTH = 112;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n';
 import { clock } from '../lib/format';
 import { PAIR_TIMEZONE } from '../lib/day';
@@ -20,7 +20,7 @@ interface Props {
  * a devtools inspector. What is shown before unlocking is only what is fair to
  * show: that they wrote, and when.
  */
-export function AnswerPair({ day, partnerName, saving, onSave }: Props) {
+export const AnswerPair = memo(function AnswerPair({ day, partnerName, saving, onSave }: Props) {
   const { t, locale } = useI18n();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -50,9 +50,23 @@ export function AnswerPair({ day, partnerName, saving, onSave }: Props) {
     setEditing(false);
   };
 
+  /**
+   * An empty card is an invitation, and it used to look like a blank one.
+   * Until something has been written it carries the terracotta of every other
+   * control on the page — more insistent still once she has written and her
+   * answer is sitting there waiting to be unlocked.
+   */
+  const mineClass = [
+    'answer answer--mine',
+    !mine && !editing ? 'answer--empty' : '',
+    !mine && !editing && partnerAnswered ? 'answer--urgent' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className="answers">
-      <div className="answer answer--mine">
+      <div className={mineClass}>
         <span className="answer__label">{t('answer.you')}</span>
 
         {editing ? (
@@ -77,18 +91,14 @@ export function AnswerPair({ day, partnerName, saving, onSave }: Props) {
         ) : mine ? (
           <>
             <p className="answer__text">{mine.text}</p>
-            <div style={{ flex: 1 }} />
-            <button className="button button--ghost" style={{ alignSelf: 'flex-start' }} onClick={beginEdit}>
+            <div className="answer__spacer" />
+            <button className="button button--ghost answer__edit" onClick={beginEdit}>
               {t('answer.edit')}
             </button>
             <span className="answer__foot">{mine.syncedAt ? t('answer.synced') : t('answer.pending')}</span>
           </>
         ) : (
-          <button
-            className={`answer__placeholder ${partnerAnswered ? 'answer__placeholder--urgent' : ''}`}
-            onClick={beginEdit}
-            style={{ background: 'none', border: 0, padding: 0, textAlign: 'left', font: 'inherit', fontStyle: 'italic', color: partnerAnswered ? 'var(--terracotta)' : 'var(--ink-pale)', cursor: 'text' }}
-          >
+          <button className="answer__placeholder answer__prompt" onClick={beginEdit}>
             {partnerAnswered ? t('answer.placeholderUrgent') : t('answer.placeholder')}
           </button>
         )}
@@ -111,9 +121,9 @@ export function AnswerPair({ day, partnerName, saving, onSave }: Props) {
           <span className="answer__placeholder">{t('answer.notYet')}</span>
         )}
 
-        <div style={{ flex: 1 }} />
+        <div className="answer__spacer" />
         {!theirs && <span className="answer__foot">{partnerAnswered ? t('answer.hidden') : t('answer.waiting')}</span>}
       </div>
     </div>
   );
-}
+});

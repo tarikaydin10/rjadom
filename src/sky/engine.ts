@@ -1,5 +1,6 @@
 import * as SunCalc from 'suncalc';
 import { CITIES, MIDPOINT, type CityId } from '../content/cities';
+import { DAY_MS } from '../lib/day';
 
 /**
  * The sky band, precomputed.
@@ -17,8 +18,11 @@ import { CITIES, MIDPOINT, type CityId } from '../content/cities';
  * needs fetching ahead; that lives in `src/weather`.
  */
 
-export const SLOT_MS = 5 * 60 * 1000;
-export const SLOTS = 288; // one day in five-minute steps
+/** How finely the sun's and moon's tracks are sampled. Positions themselves are
+ *  computed exactly for the moment shown — see `rowAt` — so this only decides
+ *  how smooth the drawn curve is, not how smooth the motion along it is. */
+const TRACK_STEP_MS = 5 * 60 * 1000;
+const TRACK_SAMPLES = 288; // one day in five-minute steps
 
 // Band geometry, taken from the design prototype.
 /**
@@ -27,8 +31,15 @@ export const SLOTS = 288; // one day in five-minute steps
  * taller than the prototype's because that shelf has to hold them: it used to
  * cost nothing because the names floated in the sky, over a scrim that dimmed
  * the sky to make them legible. Land under a horizon needs no scrim.
+ *
+ * These two numbers are the single source of the band's geometry. The
+ * stylesheet does not restate them: `SkyBand` publishes them as the
+ * `--band-height` and `--horizon` custom properties on the band itself, so CSS
+ * and the drawn coordinates cannot drift apart. They did, once, and the drift
+ * showed up as a sun that missed its own track and a shadow edge above the
+ * horizon line.
  */
-export const BAND_HEIGHT = 316;
+export const BAND_HEIGHT = 346;
 export const HORIZON = 240;
 const APEX = 86;
 /**
@@ -104,14 +115,44 @@ export function southOffset(azimuthFromNorth: number): number {
   return ((((azimuthFromNorth - 180) % 360) + 540) % 360) - 180;
 }
 
+/**
+ * The horizontal axis: a squash, not a clamp.
+ *
+ * It used to be a straight scale of 62% of the width per 180° of azimuth,
+ * pinned into [4, 96]. Those two do not fit: the straight part runs out of band
+ * at 74° either side of south, so a body anywhere further round — which is most
+ * of a summer sunrise, and the moon for much of the night — was parked on the
+ * edge at exactly x = 4 or x = 96. It sat there off any drawn line, because a
+ * run of pinned points is not a path and `trackSegments` rightly refuses to
+ * draw one. That is the moon floating beside its own track.
+ *
+ * `tanh` keeps the middle of the sky at very nearly the old scale, where the
+ * sun spends the day and the reading matters, and bends the last stretch in
+ * towards the frame instead of stopping against it. Nothing is ever clamped, so
+ * every body stands on its own track at every hour.
+ */
+const HALF_WIDTH = 46; // furthest from centre, at due north
+const SQUASH = 1.348; // chosen so the slope at due south matches the old 62
+
 export function place(altDeg: number, azimuthFromNorth: number): { x: number; y: number } {
   // Negated: east (a negative offset) belongs on the right.
-  const x = Math.min(96, Math.max(4, 50 - (southOffset(azimuthFromNorth) / 180) * 62));
+  const x = 50 - HALF_WIDTH * Math.tanh((SQUASH * southOffset(azimuthFromNorth)) / 180);
   const y = HORIZON - (altDeg / MAX_ALT) * (HORIZON - APEX);
   return { x: Number(x.toFixed(2)), y: Number(y.toFixed(1)) };
 }
 
 const sunTone = (alt: number) => (alt > 8 ? '#FFE9A8' : alt > 0 ? '#FFC978' : '#E8926A');
+
+/**
+ * How a set sun leaves.
+ *
+ * Not a switch. The ground is a wash rather than a wall, so a sun just under the
+ * horizon glows up through it, which is what dusk looks like — but a few degrees
+ * further down it is properly gone, and letting it linger left a bright disc
+ * sitting on top of a city's clock in the middle of the night.
+ */
+const SUN_GONE_AT = -4;
+const sunFade = (alt: number) => Math.min(1, Math.max(0, 1 - alt / SUN_GONE_AT));
 const sunHalo = (alt: number) =>
   alt > 8 ? 'rgba(255,233,168,0.45)' : alt > 0 ? 'rgba(255,201,120,0.4)' : 'rgba(232,146,106,0.3)';
 
@@ -125,7 +166,6 @@ export type StatusKey =
   | 'youLast';
 
 export interface SkyRow {
-  ms: number;
   /** Sun altitude in degrees, per city. */
   alt: Record<CityId, number>;
   /** The brighter of the two — drives stars, text colour and status. */
@@ -164,8 +204,9 @@ export interface SunEvent {
  *
  * Split rather than one long line, for two reasons: the part below the horizon
  * is drawn differently from the part above it, and the horizontal position wraps
- * when a body passes due north, which would otherwise draw a line straight back
- * across the sky.
+ * when a body passes due north — the far edge of the band on one side is the far
+ * edge on the other — which would otherwise draw a line straight back across the
+ * sky.
  */
 export interface SkyPathSegment {
   d: string;
@@ -174,7 +215,6 @@ export interface SkyPathSegment {
 
 export interface SkyDay {
   dayStart: number;
-  rows: SkyRow[];
   events: Record<CityId, SunEvent>;
   /**
    * Where the sun and moon actually go today, in band coordinates.
@@ -203,11 +243,7 @@ function trackSegments(points: TrackPoint[]): SkyPathSegment[] {
   let above: boolean | null = null;
 
   const flush = () => {
-    // A run stuck against a band edge is the clamp, not a path: the body is
-    // somewhere off past due north and its position has nowhere left to go.
-    const pinned =
-      current.length > 1 && current.every((p) => p.x <= 4.01 || p.x >= 95.99);
-    if (current.length > 1 && above !== null && !pinned) {
+    if (current.length > 1 && above !== null) {
       const d = current.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)} ${p.y.toFixed(1)}`).join(' ');
       segments.push({ d, above });
     }
@@ -262,17 +298,19 @@ function eventsFor(dayStart: number, cityId: CityId): SunEvent {
  * Which way the moon's lit edge points: at the sun.
  *
  * Taken from the angle between the two bodies in the sky, not from where they
- * ended up being drawn. Drawn positions are clamped at the band edges and jump
+ * ended up being drawn. Drawn positions squash towards the band edges and jump
  * from one side to the other when a body passes due north, and reading the
  * direction off them made the moon flip over in an instant around solar
  * midnight. An angular difference, normalised once, moves smoothly through that.
  *
- * The band compresses the two axes differently — 62% of the width per 180° of
- * azimuth against 74px per 66° of altitude — so the difference is converted to
- * the band's own proportions before the angle is taken, or the crescent would
- * lean wrongly. Widths vary by phone; only the ratio matters here.
+ * The band compresses the two axes differently, so the difference is converted
+ * to the band's own proportions before the angle is taken, or the crescent would
+ * lean wrongly. The horizontal figure is `place`'s scale near due south, where
+ * the two of them are whenever the tilt is worth looking at. Widths vary by
+ * phone; only the ratio matters here.
  */
-const PX_PER_AZIMUTH_DEGREE = (0.62 * 393) / 180;
+const NOMINAL_BAND_WIDTH = 393;
+const PX_PER_AZIMUTH_DEGREE = (((HALF_WIDTH * SQUASH) / 180) * NOMINAL_BAND_WIDTH) / 100;
 const PX_PER_ALTITUDE_DEGREE = (HORIZON - APEX) / MAX_ALT;
 
 function limbTilt(sunAlt: number, sunAz: number, moonAlt: number, moonAz: number): number {
@@ -294,85 +332,99 @@ function brightestAt(ms: number): number {
   );
 }
 
-/** Build one full day of rows. Called once per date, never inside a render. */
+const DAY_INK = {
+  primary: '#1E2029',
+  secondary: '#33323C',
+  shadow: '0 1px 2px rgba(255,252,244,0.65)',
+  arc: 'rgba(36,31,27,0.30)',
+  horizon: 'rgba(36,31,27,0.42)',
+} as const;
+
+const NIGHT_INK = {
+  primary: '#FFF9EF',
+  secondary: '#F2E3D0',
+  shadow: '0 1px 3px rgba(20,16,28,0.6)',
+  arc: 'rgba(246,224,190,0.34)',
+  horizon: 'rgba(246,224,190,0.5)',
+} as const;
+
+/** How far back "rising" looks. Short enough to be the same slope, long enough
+ *  that the altitude has actually moved further than floating-point noise. */
+const SLOPE_WINDOW_MS = 60 * 1000;
+
+/**
+ * The sky at one exact moment.
+ *
+ * Computed rather than looked up. This used to read from a table of 288
+ * five-minute rows, which meant a drag across the band moved the sun in
+ * fourteen hundred discrete steps of five minutes each — visible as stepping on
+ * a slow scrub, and the reason the gesture felt notched rather than continuous.
+ * Six SunCalc calls cost microseconds, so there is no table to quantise to.
+ */
+export function rowAt(ms: number): SkyRow {
+  const at = new Date(ms);
+
+  const hh = SunCalc.getPosition(at, CITIES.hamburg.lat, CITIES.hamburg.lon);
+  const kd = SunCalc.getPosition(at, CITIES.kaliningrad.lat, CITIES.kaliningrad.lon);
+  const mid = SunCalc.getPosition(at, MIDPOINT.lat, MIDPOINT.lon);
+  const moon = SunCalc.getMoonPosition(at, MIDPOINT.lat, MIDPOINT.lon);
+  const illumination = SunCalc.getMoonIllumination(at);
+
+  // SunCalc 2.x reports altitude in degrees already — no conversion.
+  const hhAlt = hh.altitude;
+  const kdAlt = kd.altitude;
+  const midAlt = mid.altitude;
+  const moonAlt = moon.altitude;
+  const bright = Math.max(hhAlt, kdAlt);
+  const isDay = bright > 6;
+
+  const sunPos = place(midAlt, mid.azimuth);
+  const moonPos = place(moonAlt, moon.azimuth);
+
+  return {
+    alt: { hamburg: hhAlt, kaliningrad: kdAlt },
+    bright,
+    sky: { hamburg: gradientFor(hhAlt), kaliningrad: gradientFor(kdAlt) },
+    sun: {
+      x: sunPos.x,
+      y: sunPos.y,
+      color: sunTone(midAlt),
+      glow: sunHalo(midAlt),
+      opacity: sunFade(midAlt),
+    },
+    moon: {
+      x: moonPos.x,
+      y: moonPos.y,
+      opacity: moonAlt > 0 ? (bright >= 8 ? 0.35 : Math.min(0.9, 0.35 + ((8 - bright) / 14) * 0.55)) : 0,
+      illuminated: illumination.fraction,
+      tilt: limbTilt(midAlt, mid.azimuth, moonAlt, moon.azimuth),
+    },
+    starOpacity: Math.min(1, Math.max(0, (-4 - bright) / 10)),
+    isDay,
+    rising: bright >= brightestAt(ms - SLOPE_WINDOW_MS),
+    text: isDay ? DAY_INK : NIGHT_INK,
+  };
+}
+
+/**
+ * What is fixed for a whole date: the two sunrise/sunset pairs, and the tracks
+ * the sun and moon trace across the band. Called once per date, never inside a
+ * render — see `skyDay`.
+ */
 export function buildDay(dayStart: number): SkyDay {
-  const rows: SkyRow[] = [];
   const sunTrack: TrackPoint[] = [];
   const moonTrack: TrackPoint[] = [];
-  // Seeded from just before midnight so the first slot of the day is not
-  // arbitrarily called "rising".
-  let previousBright = brightestAt(dayStart - SLOT_MS);
 
-  for (let i = 0; i < SLOTS; i++) {
-    const ms = dayStart + i * SLOT_MS;
-    const at = new Date(ms);
-
-    const hh = SunCalc.getPosition(at, CITIES.hamburg.lat, CITIES.hamburg.lon);
-    const kd = SunCalc.getPosition(at, CITIES.kaliningrad.lat, CITIES.kaliningrad.lon);
-    const mid = SunCalc.getPosition(at, MIDPOINT.lat, MIDPOINT.lon);
+  for (let i = 0; i < TRACK_SAMPLES; i++) {
+    const at = new Date(dayStart + i * TRACK_STEP_MS);
+    const sun = SunCalc.getPosition(at, MIDPOINT.lat, MIDPOINT.lon);
     const moon = SunCalc.getMoonPosition(at, MIDPOINT.lat, MIDPOINT.lon);
-    const illumination = SunCalc.getMoonIllumination(at);
-
-    // SunCalc 2.x reports altitude in degrees already — no conversion.
-    const hhAlt = hh.altitude;
-    const kdAlt = kd.altitude;
-    const midAlt = mid.altitude;
-    const moonAlt = moon.altitude;
-    const bright = Math.max(hhAlt, kdAlt);
-    const isDay = bright > 6;
-
-    const sunPos = place(midAlt, mid.azimuth);
-    const moonPos = place(moonAlt, moon.azimuth);
-    sunTrack.push({ ...sunPos, alt: midAlt });
-    moonTrack.push({ ...moonPos, alt: moonAlt });
-
-    // Compare before advancing, or every slot compares against itself.
-    const rising = bright >= previousBright;
-    previousBright = bright;
-
-    rows.push({
-      ms,
-      alt: { hamburg: hhAlt, kaliningrad: kdAlt },
-      bright,
-      sky: { hamburg: gradientFor(hhAlt), kaliningrad: gradientFor(kdAlt) },
-      sun: {
-        x: sunPos.x,
-        y: sunPos.y,
-        color: sunTone(midAlt),
-        glow: sunHalo(midAlt),
-        opacity: midAlt < -8 ? 0 : 1,
-      },
-      moon: {
-        x: moonPos.x,
-        y: moonPos.y,
-        opacity: moonAlt > 0 ? (bright >= 8 ? 0.35 : Math.min(0.9, 0.35 + ((8 - bright) / 14) * 0.55)) : 0,
-        illuminated: illumination.fraction,
-        tilt: limbTilt(midAlt, mid.azimuth, moonAlt, moon.azimuth),
-      },
-      starOpacity: Math.min(1, Math.max(0, (-4 - bright) / 10)),
-      isDay,
-      rising,
-      text: isDay
-        ? {
-            primary: '#1E2029',
-            secondary: '#33323C',
-            shadow: '0 1px 2px rgba(255,252,244,0.65)',
-            arc: 'rgba(36,31,27,0.30)',
-            horizon: 'rgba(36,31,27,0.42)',
-          }
-        : {
-            primary: '#FFF9EF',
-            secondary: '#F2E3D0',
-            shadow: '0 1px 3px rgba(20,16,28,0.6)',
-            arc: 'rgba(246,224,190,0.34)',
-            horizon: 'rgba(246,224,190,0.5)',
-          },
-    });
+    sunTrack.push({ ...place(sun.altitude, sun.azimuth), alt: sun.altitude });
+    moonTrack.push({ ...place(moon.altitude, moon.azimuth), alt: moon.altitude });
   }
 
   return {
     dayStart,
-    rows,
     events: { hamburg: eventsFor(dayStart, 'hamburg'), kaliningrad: eventsFor(dayStart, 'kaliningrad') },
     paths: { sun: trackSegments(sunTrack), moon: trackSegments(moonTrack) },
   };
@@ -402,15 +454,10 @@ export function startOfLocalDay(ms: number): number {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
-export function slotOf(ms: number): number {
-  const offset = ms - startOfLocalDay(ms);
-  return Math.min(SLOTS - 1, Math.max(0, Math.floor(offset / SLOT_MS)));
-}
-
 /**
  * Day tables, cached by date.
  *
- * Building one day costs 288 × 4 position calls — a few milliseconds, but not
+ * Building one day costs 288 × 2 position calls — a few milliseconds, but not
  * something to do while the user is mid-gesture. `prefetchDays` walks the next
  * few days during idle time so that midnight, a scrub into tomorrow, or a cold
  * start on a plane all find the table already built.
@@ -431,8 +478,6 @@ export function skyDay(ms: number): SkyDay {
   }
   return built;
 }
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Build today plus `days` further tables without blocking the first paint. */
 export function prefetchDays(fromMs: number, days = 6): void {

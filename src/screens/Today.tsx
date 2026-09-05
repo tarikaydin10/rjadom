@@ -7,8 +7,8 @@ import { useI18n } from '../i18n';
 import { useNow, useOnline, useSyncStatus, useWeather } from '../lib/hooks';
 import { useSettings } from '../data/settings-context';
 import { BAND_ORDER } from '../content/cities';
-import { skyDay, slotOf, statusFor } from '../sky/engine';
-import { dateKey } from '../lib/day';
+import { rowAt, skyDay, statusFor } from '../sky/engine';
+import { dateKey, DAY_MS } from '../lib/day';
 import { questionFor } from '../content/questions';
 import { displayName, sidesFor } from '../data/settings';
 import { getPair } from '../data/pair';
@@ -23,7 +23,7 @@ const EMPTY_DAY: DayAnswers = { mine: null, theirs: null, partner: null };
  * anywhere; the weather reaches seven days, and past a fortnight this stops
  * being a gesture and starts being a date picker.
  */
-const SCRUB_LIMIT_MS = 14 * 24 * 60 * 60 * 1000;
+const SCRUB_LIMIT_MS = 14 * DAY_MS;
 
 export function Today() {
   const { t, locale } = useI18n();
@@ -52,23 +52,12 @@ export function Today() {
 
   const shownMs = scrubMs ?? now;
   const table = skyDay(shownMs);
-  const row = table.rows[slotOf(shownMs)] ?? table.rows[0]!;
+  const row = rowAt(shownMs);
 
   const member = getPair()?.member ?? 'a';
   const sides = sidesFor(member, settings);
   const yourCity = sides.yours;
   const partnerName = displayName(sides.partnerName, locale);
-
-  // Sync the top of the sky gradient to the app background so overscrolling up reveals the sky.
-  useEffect(() => {
-    const topColorMatch = row.sky[yourCity].match(/#[\da-fA-F]+/i);
-    const app = document.querySelector('.app') as HTMLElement;
-    if (topColorMatch && app) {
-      const topColor = topColorMatch[0];
-      app.style.background = `linear-gradient(180deg, ${topColor} 0%, ${topColor} 50%, var(--paper) 50%, var(--paper) 100%)`;
-      return () => { app.style.background = ''; };
-    }
-  }, [row.sky, yourCity]);
 
   const scrubTo = (ms: number) => {
     cancelRewind();
@@ -101,8 +90,8 @@ export function Today() {
 
     const started = performance.now();
     const distance = Math.abs(Date.now() - from);
-    // A few hours winds back briskly; a fortnight takes a breath longer. Made slower per user request.
-    const duration = Math.min(3500, 1000 + (distance / (24 * 60 * 60 * 1000)) * 500);
+    // A few hours winds back briskly; a fortnight takes a breath longer.
+    const duration = Math.min(3500, 1000 + (distance / DAY_MS) * 500);
     const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
 
     const step = (frame: number) => {
@@ -123,12 +112,16 @@ export function Today() {
   useEffect(() => cancelRewind, []);
 
 
-  const onSave = (text: string) => {
-    setSaving(true);
-    void saveMyAnswer(today, question.id, text)
-      .then(refresh)
-      .finally(() => setSaving(false));
-  };
+  // Stable across renders, so winding the sky does not re-render the answers.
+  const onSave = useCallback(
+    (text: string) => {
+      setSaving(true);
+      void saveMyAnswer(today, question.id, text)
+        .then(refresh)
+        .finally(() => setSaving(false));
+    },
+    [today, question.id, refresh],
+  );
 
   const netline = (): string | null => {
     if (!online) return t('net.offline');
@@ -150,7 +143,6 @@ export function Today() {
         rightCity={BAND_ORDER.right}
         weather={weather}
         onScrubTo={scrubTo}
-        onScrubEnd={() => undefined}
       />
 
       <div className={`status ${scrubMs !== null ? 'status--preview' : ''}`}>

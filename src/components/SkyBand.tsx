@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { CITIES, type CityId } from '../content/cities';
 import type { SkyDay, SkyRow } from '../sky/engine';
 import { STARS } from '../sky/stars';
@@ -10,30 +10,90 @@ import { nextEvent } from '../sky/notes';
 import { conditionKey, observationAt, type WeatherCache } from '../weather/openmeteo';
 import { WeatherLayer } from './WeatherLayer';
 import { clock, roundTemp } from '../lib/format';
+import { DAY_MS } from '../lib/day';
 import { useI18n } from '../i18n';
 
 interface Props {
   row: SkyRow;
   /** Today's table, for the tracks the sun and moon actually follow. */
   day: SkyDay;
-  /** Both cities keep fixed sides — see BAND_ORDER in `content/cities.ts`. */
   /** The moment being shown — real time, or wherever the drag has landed. */
   ms: number;
+  /** Both cities keep fixed sides — see BAND_ORDER in `content/cities.ts`. */
   leftCity: CityId;
   rightCity: CityId;
   weather: WeatherCache | undefined;
   /** Absolute moment to show. Clamped by the caller. */
   onScrubTo(ms: number): void;
-  onScrubEnd(): void;
 }
 
 /** Movement below this is a tap, not a scrub. */
 const DRAG_THRESHOLD_PX = 6;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo, onScrubEnd }: Props) {
+/**
+ * How often the named stars are re-placed while time moves.
+ *
+ * They turn a quarter of a degree a minute, so anything finer is invisible;
+ * recomputing eighteen positions and four paths on every pointer event was not.
+ */
+const STAR_REFRESH_MS = 30 * 1000;
+
+/**
+ * The band's geometry, handed to CSS.
+ *
+ * `sky/engine.ts` owns these numbers because the sun, the moon and the tracks
+ * are drawn in them; the stylesheet reads them from here rather than repeating
+ * them, so the two cannot disagree.
+ */
+const GEOMETRY = {
+  '--band-height': `${BAND_HEIGHT}px`,
+  '--horizon': `${HORIZON}px`,
+} as CSSProperties;
+
+/**
+ * The scattered field: fixed at module load, so it never needs to render twice.
+ * Its brightness rides on the wrapper's opacity, which leaves this subtree
+ * untouched as time moves.
+ */
+const StarField = memo(function StarField() {
+  return (
+    <>
+      {STARS.map((star, index) => (
+        <span
+          key={index}
+          className="sky__star"
+          style={
+            {
+              left: `${star.x}%`,
+              top: `${star.y}%`,
+              width: star.size,
+              height: star.size,
+              background: `rgb(${star.tint})`,
+              boxShadow: star.glow ? `0 0 ${star.glow}px rgba(${star.tint}, 0.5)` : undefined,
+              '--star-opacity': star.opacity,
+              animationDuration: `${star.period}s`,
+              animationDelay: `${star.delay}s`,
+            } as CSSProperties
+          }
+        />
+      ))}
+    </>
+  );
+});
+
+export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo }: Props) {
   const { t, locale } = useI18n();
   const drag = useRef<{ x: number; ms: number; width: number; engaged: boolean } | null>(null);
+  /** The latest position, waiting for a frame. See `onPointerMove`. */
+  const pending = useRef<number | null>(null);
+  const frame = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
 
   /**
    * The design's time slider was a demo tool and the handoff says so — in the
@@ -63,17 +123,27 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
     // Continuous rather than clamped to the calendar day: one band width is one
     // day, and a drag that keeps going keeps going. Stopping dead at midnight
     // made "what is it like there tomorrow morning" impossible to ask.
-    onScrubTo(state.ms + (dx / state.width) * DAY_MS);
+    //
+    // A phone reports pointers faster than it paints, and repainting two skies
+    // per event meant the finger arrived somewhere the picture had not — which
+    // is what made a slow drag feel heavy. One repaint per frame, at the newest
+    // position: nothing is queued behind the finger.
+    pending.current = state.ms + (dx / state.width) * DAY_MS;
+    if (frame.current !== null) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      if (pending.current !== null) onScrubTo(pending.current);
+    });
   };
 
   const endDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
     const state = drag.current;
     drag.current = null;
+    pending.current = null;
     if (!state?.engaged) return;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    onScrubEnd();
   };
 
   const observed = {
@@ -90,35 +160,38 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
   };
 
   /**
-   * The named stars, placed for this moment. Only those actually inside the
-   * band's view: it looks south, so anything much past due east or west has run
-   * off the edge of the projection and is left undrawn rather than stacked
-   * against the frame.
+   * The named stars and the figures between them, placed for this moment. Only
+   * those actually inside the band's view: it looks south, so anything much past
+   * due east or west has run off the edge of the projection and is left undrawn
+   * rather than stacked against the frame.
    */
-  const named = CATALOGUE.map((star) => {
-    const position = starPosition(star, ms);
-    const spot = place(position.altitude, position.azimuth);
-    const size = Math.min(3.4, Math.max(1.4, 2.9 - star.mag * 0.45));
-    return {
-      name: star.name,
-      ...spot,
-      size,
-      altitude: position.altitude,
-      visible: position.altitude > 1.5 && Math.abs(southOffset(position.azimuth)) < VISIBLE_FROM_SOUTH,
-      opacity: Math.min(1, Math.max(0.35, 1.05 - star.mag * 0.16)),
-      // Bright stars are steadier; the low ones shimmer.
-      period: 3.4 + (star.mag + 2) * 0.7,
-      delay: -star.ra,
-    };
-  }).filter((star) => star.visible);
+  const sidereal = Math.round(ms / STAR_REFRESH_MS);
+  const { named, asterismPaths } = useMemo(() => {
+    const at = sidereal * STAR_REFRESH_MS;
+    const stars = CATALOGUE.map((star) => {
+      const position = starPosition(star, at);
+      return {
+        name: star.name,
+        ...place(position.altitude, position.azimuth),
+        size: Math.min(3.4, Math.max(1.4, 2.9 - star.mag * 0.45)),
+        visible: position.altitude > 1.5 && Math.abs(southOffset(position.azimuth)) < VISIBLE_FROM_SOUTH,
+        opacity: Math.min(1, Math.max(0.35, 1.05 - star.mag * 0.16)),
+        // Bright stars are steadier; the low ones shimmer.
+        period: 3.4 + (star.mag + 2) * 0.7,
+        delay: -star.ra,
+      };
+    }).filter((star) => star.visible);
 
-  const byName = new Map(named.map((star) => [star.name, star]));
-  const asterismPaths = ASTERISMS.map((indices) => {
-    const points = indices.map((i) => byName.get(CATALOGUE[i]!.name));
-    // Drawn only when the whole shape is up; half a constellation is a scribble.
-    if (points.some((point) => point === undefined)) return null;
-    return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p!.x.toFixed(2)} ${p!.y.toFixed(1)}`).join(' ');
-  }).filter((d): d is string => d !== null);
+    const byName = new Map(stars.map((star) => [star.name, star]));
+    const paths = ASTERISMS.map((indices) => {
+      const points = indices.map((i) => byName.get(CATALOGUE[i]!.name));
+      // Drawn only when the whole shape is up; half a constellation is a scribble.
+      if (points.some((point) => point === undefined)) return null;
+      return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p!.x.toFixed(2)} ${p!.y.toFixed(1)}`).join(' ');
+    }).filter((d): d is string => d !== null);
+
+    return { named: stars, asterismPaths: paths };
+  }, [sidereal]);
 
   const conditionOf = (city: CityId): string | null => {
     const observation = observed[city];
@@ -143,6 +216,7 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
   return (
     <div
       className="sky"
+      style={GEOMETRY}
       role="img"
       aria-label={t('sky.label')}
       onPointerDown={onPointerDown}
@@ -153,33 +227,17 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
       <div className="sky__layer" style={{ background: row.sky[leftCity] }} />
       <div className="sky__layer sky__layer--east" style={{ background: row.sky[rightCity] }} />
 
-      {/* Everything below is positioned in the band's own coordinates — horizon
-          at 186, the cities on the ground beneath it — so it sits in a frame
-          pushed clear of whatever the phone hides at the top. Only the colour
-          layers fill the whole band and run up under the island. */}
-      {/* Outside the frame on purpose: the field is measured in percentages of
-          the sky rather than in band pixels, so it fills right up under a
-          phone's island instead of stopping at a line across the top. */}
+      {/* Everything below is positioned in the band's own coordinates — the
+          horizon, and the cities on the ground beneath it — so it sits in a
+          frame pushed clear of whatever the phone hides at the top. Only the
+          colour layers fill the whole band and run up under the island.
+
+          The field is the exception, and is outside the frame on purpose: it is
+          measured in percentages of the sky rather than in band pixels, so it
+          fills right up under a phone's island instead of stopping at a line
+          across the top. */}
       <div className="sky__field" style={{ opacity: row.starOpacity }}>
-        {STARS.map((star, index) => (
-          <span
-            key={index}
-            className="sky__star"
-            style={
-              {
-                left: `${star.x}%`,
-                top: `${star.y}%`,
-                width: star.size,
-                height: star.size,
-                background: `rgb(${star.tint})`,
-                boxShadow: star.glow ? `0 0 ${star.glow}px rgba(${star.tint}, 0.5)` : undefined,
-                '--star-opacity': star.opacity,
-                animationDuration: `${star.period}s`,
-                animationDelay: `${star.delay}s`,
-              } as React.CSSProperties
-            }
-          />
-        ))}
+        <StarField />
       </div>
 
       <div className="sky__frame">
@@ -223,46 +281,61 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
               vectorEffect="non-scaling-stroke"
             />
           ))}
+          {/* One continuous hairline per figure. It was dotted, which at a
+              1px stroke came out as a rough dashed scribble rather than the
+              line an eye draws between two stars. */}
           {row.starOpacity > 0.05 &&
-          asterismPaths.map((d, index) => (
-            <path
-              key={`a${index}`}
-              d={d}
-              stroke="rgba(255, 255, 255, 0.7)"
-              strokeOpacity={row.starOpacity * 0.6}
-              strokeWidth="1"
-              strokeDasharray="1 4"
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-        <line x1="0" y1={HORIZON} x2="100" y2={HORIZON} stroke={row.text.horizon} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+            asterismPaths.map((d, index) => (
+              <path
+                key={`a${index}`}
+                d={d}
+                stroke="rgba(226, 232, 255, 0.55)"
+                strokeOpacity={row.starOpacity * 0.55}
+                strokeWidth="0.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          <line
+            x1="0"
+            y1={HORIZON}
+            x2="100"
+            y2={HORIZON}
+            stroke={row.text.horizon}
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
         </svg>
 
         {row.starOpacity > 0.05 && (
-        <div className="sky__layer" style={{ opacity: row.starOpacity }}>
-          {named.map((star) => (
-            <span
-              key={star.name}
-              className="sky__star sky__star--named"
-              style={
-                {
-                  left: `${star.x}%`,
-                  top: star.y,
-                  width: star.size,
-                  height: star.size,
-                  boxShadow: `0 0 ${(star.size * 1.6).toFixed(1)}px rgba(255, 250, 240, 0.55)`,
-                  '--star-opacity': star.opacity,
-                  animationDuration: `${star.period}s`,
-                  animationDelay: `${star.delay}s`,
-                } as React.CSSProperties
-              }
-            />
-          ))}
-        </div>
-      )}
+          <div className="sky__layer" style={{ opacity: row.starOpacity }}>
+            {named.map((star) => (
+              <span
+                key={star.name}
+                className="sky__star"
+                style={
+                  {
+                    left: `${star.x}%`,
+                    top: star.y,
+                    width: star.size,
+                    height: star.size,
+                    // Centred on the position, not hung from it: the figure
+                    // lines are drawn through these points, and an offset of
+                    // half a star is exactly what makes them miss.
+                    margin: `${(-star.size / 2).toFixed(2)}px 0 0 ${(-star.size / 2).toFixed(2)}px`,
+                    boxShadow: `0 0 ${(star.size * 1.6).toFixed(1)}px rgba(255, 250, 240, 0.55)`,
+                    '--star-opacity': star.opacity,
+                    animationDuration: `${star.period}s`,
+                    animationDelay: `${star.delay}s`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </div>
+        )}
 
-      <MoonDisc
+        <MoonDisc
           size={16}
           illuminated={row.moon.illuminated}
           tilt={row.moon.tilt}
@@ -281,12 +354,13 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
         />
 
         <WeatherLayer condition={conditionOf(leftCity)} city={leftCity} side="left" isDay={row.isDay} />
-      <WeatherLayer condition={conditionOf(rightCity)} city={rightCity} side="right" isDay={row.isDay} />
+        <WeatherLayer condition={conditionOf(rightCity)} city={rightCity} side="right" isDay={row.isDay} />
 
-      {/* Land: a wash that settles the ground below the horizon, and the hem
-          that dissolves it into the page. Both sit above the sun, so a sun just
-          under the horizon glows through the ground instead of over it. */}
-      <div className="sky__ground" />
+        {/* Land: a wash that settles the ground below the horizon, and the hem
+            that dissolves it into the page. Both sit above the sun, so a sun
+            just under the horizon glows through the ground instead of over
+            it. */}
+        <div className="sky__ground" />
         <div className="sky__cities">
           {column(leftCity, 'left')}
           {column(rightCity, 'right')}

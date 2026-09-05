@@ -33,7 +33,7 @@ export function dateKeyToMs(key: string): number {
   return Date.UTC(y ?? 1970, (m ?? 1) - 1, d ?? 1, 12);
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function daysBetween(fromKey: string, toKey: string): number {
   return Math.round((dateKeyToMs(toKey) - dateKeyToMs(fromKey)) / DAY_MS);
