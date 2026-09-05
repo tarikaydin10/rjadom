@@ -133,7 +133,7 @@ export function Today() {
   const line = netline();
 
   return (
-    <>
+    <div className="screen-scroll">
       <SkyBand
         row={row}
         day={table}
@@ -165,6 +165,6 @@ export function Today() {
         <AnswerPair day={day} partnerName={partnerName} saving={saving} onSave={onSave} />
         <CountdownCard />
       </div>
-    </>
+    </div>
   );
 }

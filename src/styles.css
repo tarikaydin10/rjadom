@@ -21,7 +21,7 @@
 
   --gutter: 22px;
   --radius-card: 14px;
-  --band-height: 316px;
+  --band-height: 346px;
   /* Where the sky stops and the ground starts, inside the band's own
      coordinates. Mirrors HORIZON in sky/engine.ts. */
   --horizon: 240px;
@@ -83,9 +83,8 @@ textarea {
    a browser's toolbars come and go, which is what let the tab bar drift off the
    bottom edge; a fixed shell cannot drift. */
 #root {
-  position: fixed;
-  inset: 0;
   height: 100dvh;
+  width: 100%;
   display: flex;
   justify-content: center;
   overflow: hidden;
@@ -522,9 +521,6 @@ button.status__now:active {
   flex-direction: column;
   gap: 16px;
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 .question {
@@ -841,6 +837,15 @@ button.status__now:active {
   font-style: italic;
   margin: 0;
 }
+
+.screen-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior-y: contain;
+}
+
 
 .field {
   display: flex;
