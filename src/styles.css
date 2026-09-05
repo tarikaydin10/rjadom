@@ -21,7 +21,7 @@
 
   --gutter: 22px;
   --radius-card: 14px;
-  --band-height: 290px;
+  --band-height: 316px;
   /* Where the sky stops and the ground starts, inside the band's own
      coordinates. Mirrors HORIZON in sky/engine.ts. */
   --horizon: 240px;
@@ -85,6 +85,7 @@ textarea {
 #root {
   position: fixed;
   inset: 0;
+  height: 100dvh;
   display: flex;
   justify-content: center;
   overflow: hidden;
@@ -94,6 +95,7 @@ textarea {
   width: 100%;
   max-width: 440px;
   height: 100%;
+  min-height: 600px;
   background: var(--paper);
   display: flex;
   flex-direction: column;
