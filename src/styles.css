@@ -23,6 +23,16 @@
   --radius-card: 14px;
   --band-height: 232px;
 
+  /* The phone's own obstructions, named once and used everywhere.
+     Routed through variables rather than calling env() at each site: it keeps
+     the rule in one place, and it can be overridden in a test to stand a
+     Dynamic Island in front of the layout and see what happens. Requires
+     viewport-fit=cover, which index.html sets. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
   color-scheme: light;
 }
 
@@ -66,8 +76,12 @@ textarea {
   user-select: text;
 }
 
+/* Pinned to the viewport rectangle rather than sized by it. 100dvh moves while
+   a browser's toolbars come and go, which is what let the tab bar drift off the
+   bottom edge; a fixed shell cannot drift. */
 #root {
-  height: 100dvh;
+  position: fixed;
+  inset: 0;
   display: flex;
   justify-content: center;
   overflow: hidden;
@@ -81,6 +95,9 @@ textarea {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Landscape rounds the corners in from the sides. */
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 
 .kicker {
@@ -91,9 +108,12 @@ textarea {
 
 /* ---------- sky band ---------- */
 
+/* The band grows by whatever the phone hides at the top, so the sky bleeds up
+   under the island while everything drawn in it keeps its own 232px coordinate
+   system — see .sky__frame. */
 .sky {
   position: relative;
-  height: var(--band-height);
+  height: calc(var(--band-height) + var(--safe-top));
   overflow: hidden;
   background: var(--night);
   flex-shrink: 0;
@@ -124,6 +144,17 @@ textarea {
    nothing; each has its own rhythm and starts somewhere else in it, or they
    would pulse in unison like a warning light. Turned off entirely for anyone
    who has asked for less motion — see the reduced-motion rule below. */
+/* Everything positioned in band coordinates — horizon at 186, city labels at
+   52, the tracks, the stars — lives in here, pushed down past the island. Only
+   the colour layers behind it fill the whole band. */
+.sky__frame {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--safe-top);
+  height: var(--band-height);
+}
+
 .sky__star {
   position: absolute;
   border-radius: 50%;
@@ -179,7 +210,9 @@ textarea {
   top: 0;
   left: 0;
   right: 0;
-  height: 152px;
+  /* Starts at the very top of the band, not below the island, so the darkening
+     behind the city names is continuous. */
+  height: calc(152px + var(--safe-top));
   background: linear-gradient(180deg, rgba(20, 16, 28, 0.5) 0%, rgba(20, 16, 28, 0.34) 62%, rgba(20, 16, 28, 0) 100%);
   pointer-events: none;
 }
@@ -480,7 +513,8 @@ textarea {
 .tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  padding: 14px 0 calc(30px + env(safe-area-inset-bottom));
+  /* Sits on the bottom edge, clear of the home indicator. */
+  padding: 14px 0 calc(16px + var(--safe-bottom));
   text-align: center;
   font-size: 11px;
   letter-spacing: 0.1em;
@@ -507,9 +541,12 @@ textarea {
 
 /* ---------- simple screens ---------- */
 
+/* Every screen except Today starts with a heading, and a heading behind the
+   island is a heading nobody reads. Today is exempt on purpose: its sky is meant
+   to run up under the island. */
 .screen {
   flex: 1;
-  padding: 24px var(--gutter);
+  padding: calc(24px + var(--safe-top)) var(--gutter) 24px;
   display: flex;
   flex-direction: column;
   gap: 18px;

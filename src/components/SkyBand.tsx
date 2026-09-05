@@ -109,92 +109,98 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
       <div className="sky__layer" style={{ background: row.sky[leftCity] }} />
       <div className="sky__layer sky__layer--east" style={{ background: row.sky[rightCity] }} />
 
-      <div className="sky__layer" style={{ opacity: row.starOpacity }}>
-        {STARS.map((star, index) => (
-          <span
-            key={index}
-            className="sky__star"
-            style={
-              {
-                left: `${star.x}%`,
-                top: star.y,
-                width: star.size,
-                height: star.size,
-                '--star-opacity': star.opacity,
-                animationDuration: `${star.period}s`,
-                animationDelay: `${star.delay}s`,
-              } as React.CSSProperties
-            }
-          />
-        ))}
-      </div>
-
-      {/* The tracks the sun and moon actually take today, computed from the same
-          positions they are drawn at — so a body sits on its own line by
-          construction. High and wide in summer, low and short in winter, and the
-          moon's track sits apart from the sun's because it genuinely does.
-
-          The band stretches horizontally, which would thicken strokes unevenly;
-          `vector-effect` keeps them honest. Bodies stay HTML circles — an SVG
-          circle here would come out an ellipse. */}
-      <svg
-        className="sky__arc"
-        viewBox="0 0 100 232"
-        preserveAspectRatio="none"
-        fill="none"
-        aria-hidden="true"
-      >
-        {/* A track is only drawn while its body is actually visible. A line
-            with nothing on it explains nothing — it just looks like a chart. */}
-        {(row.moon.opacity > 0.05 ? day.paths.moon : []).map((segment, index) => (
-          <path
-            key={`m${index}`}
-            d={segment.d}
-            stroke={row.text.arc}
-            strokeOpacity={segment.above ? 0.38 : 0.18}
-            strokeWidth="1"
-            strokeDasharray={segment.above ? undefined : '2 4'}
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
-        {(row.sun.opacity > 0 ? day.paths.sun : []).map((segment, index) => (
-          <path
-            key={`s${index}`}
-            d={segment.d}
-            stroke={row.text.arc}
-            strokeOpacity={segment.above ? 0.62 : 0.3}
-            strokeWidth="1"
-            strokeDasharray={segment.above ? undefined : '2 4'}
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
-        <line x1="0" y1="186" x2="100" y2="186" stroke={row.text.horizon} strokeWidth="1" vectorEffect="non-scaling-stroke" />
-      </svg>
-
-      <MoonDisc
-        size={16}
-        illuminated={row.moon.illuminated}
-        waxing={row.moon.waxing}
-        tilt={row.moon.tilt}
-        opacity={row.moon.opacity}
-        style={{ position: 'absolute', left: `${row.moon.x}%`, top: row.moon.y, margin: '-8px 0 0 -8px' }}
-      />
-      <span
-        className="sky__sun"
-        style={{
-          left: `${row.sun.x}%`,
-          top: row.sun.y,
-          background: row.sun.color,
-          opacity: row.sun.opacity,
-          boxShadow: `0 0 26px 8px ${row.sun.glow}`,
-        }}
-      />
-
       <div className="sky__scrim" />
 
-      <div className="sky__cities">
-        {column(leftCity, 'left')}
-        {column(rightCity, 'right')}
+      {/* Everything below is positioned in the band's own 232px coordinates —
+          horizon at 186, city labels at 52 — so it sits in a frame pushed clear
+          of whatever the phone hides at the top. Only the colour layers and the
+          scrim above fill the whole band and run up under the island. */}
+      <div className="sky__frame">
+        <div className="sky__layer" style={{ opacity: row.starOpacity }}>
+          {STARS.map((star, index) => (
+            <span
+              key={index}
+              className="sky__star"
+              style={
+                {
+                  left: `${star.x}%`,
+                  top: star.y,
+                  width: star.size,
+                  height: star.size,
+                  '--star-opacity': star.opacity,
+                  animationDuration: `${star.period}s`,
+                  animationDelay: `${star.delay}s`,
+                } as React.CSSProperties
+              }
+            />
+          ))}
+        </div>
+
+        {/* The tracks the sun and moon actually take today, computed from the same
+            positions they are drawn at — so a body sits on its own line by
+            construction. High and wide in summer, low and short in winter, and the
+            moon's track sits apart from the sun's because it genuinely does.
+
+            The band stretches horizontally, which would thicken strokes unevenly;
+            `vector-effect` keeps them honest. Bodies stay HTML circles — an SVG
+            circle here would come out an ellipse. */}
+        <svg
+          className="sky__arc"
+          viewBox="0 0 100 232"
+          preserveAspectRatio="none"
+          fill="none"
+          aria-hidden="true"
+        >
+          {/* A track is only drawn while its body is actually visible. A line
+              with nothing on it explains nothing — it just looks like a chart. */}
+          {(row.moon.opacity > 0.05 ? day.paths.moon : []).map((segment, index) => (
+            <path
+              key={`m${index}`}
+              d={segment.d}
+              stroke={row.text.arc}
+              strokeOpacity={segment.above ? 0.38 : 0.18}
+              strokeWidth="1"
+              strokeDasharray={segment.above ? undefined : '2 4'}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+          {(row.sun.opacity > 0 ? day.paths.sun : []).map((segment, index) => (
+            <path
+              key={`s${index}`}
+              d={segment.d}
+              stroke={row.text.arc}
+              strokeOpacity={segment.above ? 0.62 : 0.3}
+              strokeWidth="1"
+              strokeDasharray={segment.above ? undefined : '2 4'}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+          <line x1="0" y1="186" x2="100" y2="186" stroke={row.text.horizon} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        </svg>
+
+        <MoonDisc
+          size={16}
+          illuminated={row.moon.illuminated}
+          waxing={row.moon.waxing}
+          tilt={row.moon.tilt}
+          opacity={row.moon.opacity}
+          style={{ position: 'absolute', left: `${row.moon.x}%`, top: row.moon.y, margin: '-8px 0 0 -8px' }}
+        />
+        <span
+          className="sky__sun"
+          style={{
+            left: `${row.sun.x}%`,
+            top: row.sun.y,
+            background: row.sun.color,
+            opacity: row.sun.opacity,
+            boxShadow: `0 0 26px 8px ${row.sun.glow}`,
+          }}
+        />
+
+        <div className="sky__cities">
+          {column(leftCity, 'left')}
+          {column(rightCity, 'right')}
+        </div>
       </div>
     </div>
   );
