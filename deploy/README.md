@@ -324,3 +324,20 @@ Der Code hängt an keinem Anbieter, die Adresse tut es. Wenn es klemmt:
 * **Ausfälle sind überbrückbar.** Die App funktioniert offline vollständig
   weiter; Antworten sammeln sich lokal und gehen raus, sobald es wieder geht.
   Ein Ausfall von Stunden kostet niemanden etwas.
+
+---
+
+# Antworten zurücksetzen
+
+Für den Livegang nach einer Testphase, oder wann immer der Stand auf dem
+Server weg soll. Auf dem Server, als root:
+
+```bash
+sudo bash deploy/reset-answers.sh
+```
+
+Erkennt Variante A und B, stoppt den Dienst, legt ein Backup mit Zeitstempel
+neben `answers.json`, leert die Antworten, behält die Einstellungen (Namen,
+Reise-Datum) und startet wieder. **Danach die PWA auf beiden Telefonen
+entfernen und neu hinzufügen** — die Geräte halten eigene Kopien, und der Sync
+kennt kein Löschen.

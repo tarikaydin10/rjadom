@@ -74,8 +74,8 @@ TD-01 nicht in einem Zyklus zu lösen ist.
 lokale Kopien auf beiden Telefonen stehen. Eine später gelöschte Antwort käme
 aus einer Outbox sogar zurück.
 **Abbau:** Erst, wenn Löschen ein Produkt-Feature wird. Bis dahin: Reset =
-Server leeren **und** PWA auf beiden Geräten neu installieren (oder Origin
-wechseln — der Umzug auf `ryadom.net` erledigt das).
+`deploy/reset-answers.sh` auf dem Server **und** PWA auf beiden Geräten neu
+installieren (oder Origin wechseln — ein Umzug auf `ryadom.net` erledigt das).
 
 ## TD-07 · Geteilte Passphrase als Fallback
 
