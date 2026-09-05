@@ -21,10 +21,10 @@
 
   --gutter: 22px;
   --radius-card: 14px;
-  --band-height: 246px;
+  --band-height: 290px;
   /* Where the sky stops and the ground starts, inside the band's own
      coordinates. Mirrors HORIZON in sky/engine.ts. */
-  --horizon: 160px;
+  --horizon: 240px;
 
   /* The phone's own obstructions, named once and used everywhere.
      Routed through variables rather than calling env() at each site: it keeps
@@ -360,13 +360,7 @@ textarea {
    land — and it meets the paper below it in the same family of colour instead
    of crossing from cold to warm at the join. */
 .sky__ground {
-  position: absolute;
-  top: var(--horizon);
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(180deg, rgba(74, 56, 42, 0.26) 0%, rgba(74, 56, 42, 0.17) 46%, rgba(74, 56, 42, 0.1) 100%);
-  pointer-events: none;
+  display: none;
 }
 
 /* The one edge that should be hard is the horizon. Where the band meets the
@@ -398,7 +392,7 @@ textarea {
    above it is left to the sun, the moon and the stars. */
 .sky__cities {
   position: absolute;
-  top: var(--horizon);
+  top: var(--safe-top);
   left: 0;
   right: 0;
   padding: 16px var(--gutter) 0;

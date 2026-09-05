@@ -28,9 +28,9 @@ export const SLOTS = 288; // one day in five-minute steps
  * cost nothing because the names floated in the sky, over a scrim that dimmed
  * the sky to make them legible. Land under a horizon needs no scrim.
  */
-export const BAND_HEIGHT = 246;
-export const HORIZON = 160;
-const APEX = 24;
+export const BAND_HEIGHT = 290;
+export const HORIZON = 240;
+const APEX = 86;
 /**
  * The altitude that reaches the top of the band.
  *
@@ -361,14 +361,14 @@ export function buildDay(dayStart: number): SkyDay {
         ? {
             primary: '#1E2029',
             secondary: '#33323C',
-            shadow: '0 1px 2px rgba(255,252,244,0.65)',
+            shadow: '0 0 8px rgba(255,255,255,0.5), 0 1px 2px rgba(255,255,255,0.8)',
             arc: 'rgba(36,31,27,0.30)',
             horizon: 'rgba(36,31,27,0.42)',
           }
         : {
             primary: '#FFF9EF',
             secondary: '#F2E3D0',
-            shadow: '0 1px 3px rgba(20,16,28,0.6)',
+            shadow: '0 0 8px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.8)',
             arc: 'rgba(246,224,190,0.34)',
             horizon: 'rgba(246,224,190,0.5)',
           },
