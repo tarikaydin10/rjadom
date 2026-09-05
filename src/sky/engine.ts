@@ -39,7 +39,6 @@ const APEX = 86;
  * and became a flat lid across the top the moment the track was.
  */
 const MAX_ALT = 66;
-const DEPTH = 12;
 
 const SKY_STOPS: { a: number; c: [string, string, string] }[] = [
   { a: 60, c: ['#6FA9DA', '#A8CFEA', '#DCEAF2'] },
