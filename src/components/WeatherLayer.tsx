@@ -16,8 +16,8 @@ interface Props {
   isDay: boolean;
 }
 
-const LEFT_MASK = 'linear-gradient(90deg, rgba(0,0,0,1) 22%, rgba(0,0,0,0) 84%)';
-const RIGHT_MASK = 'linear-gradient(90deg, rgba(0,0,0,0) 16%, rgba(0,0,0,1) 78%)';
+const LEFT_MASK = 'linear-gradient(90deg, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 80%)';
+const RIGHT_MASK = 'linear-gradient(90deg, rgba(0,0,0,0) 20%, rgba(0,0,0,1) 80%)';
 
 export function WeatherLayer({ condition, city, side, isDay }: Props) {
   if (!condition || condition === 'clear') return null;

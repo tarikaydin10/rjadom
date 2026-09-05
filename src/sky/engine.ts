@@ -350,7 +350,7 @@ export function buildDay(dayStart: number): SkyDay {
       moon: {
         x: moonPos.x,
         y: moonPos.y,
-        opacity: moonAlt > 0 && bright < 8 ? Math.min(0.9, Math.max(0, (8 - bright) / 14)) : 0,
+        opacity: moonAlt > 0 ? (bright >= 8 ? 0.35 : Math.min(0.9, 0.35 + ((8 - bright) / 14) * 0.55)) : 0,
         illuminated: illumination.fraction,
         tilt: limbTilt(midAlt, mid.azimuth, moonAlt, moon.azimuth),
       },
