@@ -23,6 +23,13 @@
   --gutter: 22px;
   --radius-card: 14px;
 
+  /* Die Höhe der Tab-Leiste, über dem Inset, das sich das Telefon selbst nimmt.
+     Einmal benannt, weil zwei Regeln dieselbe Zahl brauchen: die Leiste als ihr
+     Minimum, die Shell als den Streifen, in den kein Screen hineinschreiben
+     darf. Vorher standen dort zwei handgepflegte Kopien, und genau ihr
+     Auseinanderdriften ist der Abstand, der unter der Leiste sichtbar wurde. */
+  --tabbar-height: 56px;
+
   /* --band-height and --horizon are deliberately absent here. They are the
      band's own geometry, they belong to sky/engine.ts, which draws the sun and
      the moon in them, and `SkyBand` publishes them onto the band element. They
@@ -58,13 +65,13 @@ body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  /* The canvas under everything is the app's own paper, not the desk it lies
-     on. Whatever the shell fails to cover — a strip along the bottom edge, on a
-     phone that has taken height away from the viewport — is painted with this
-     colour, and a different beige down there is the seam that made the tab bar
-     look like it was hovering above the bottom of the screen. Now it would read
-     as more of the bar. */
-  background: var(--paper);
+  /* Die Fläche unter allem trägt die Farbe der Tab-Leiste, nicht die des
+     Papiers. Die Leiste ist das, was an der Unterkante steht; was die Shell
+     dort nicht abdeckt — ein Telefon, das dem Viewport Höhe weggenommen hat —
+     ist damit in derselben Farbe gemalt und liest sich als mehr Leiste. Ein
+     anderes Beige in diesem Streifen war die Naht, die die Leiste über dem
+     unteren Bildschirmrand schweben ließ. */
+  background: var(--card);
   /* No double-tap zoom; taps stay instant. */
   touch-action: manipulation;
 }
@@ -89,23 +96,26 @@ textarea {
   user-select: text;
 }
 
+/* An den Viewport geheftet, statt von ihm bemessen.
+   `inset: 0` auf einer fixed-Box ist das eine Maß, das iOS ohne Nachhilfe
+   richtig hinbekommt: keine Prozentkette über body und html, kein dvh, das eine
+   Tastatur veraltet zurücklassen kann, nichts, was eine Adressleiste addiert
+   oder abzieht. Die Shell *ist* der Bildschirm — also steht die Leiste, die an
+   ihrer Unterkante sitzt, an der Unterkante des Bildschirms. */
 #root {
-  height: 100dvh;
+  position: fixed;
+  inset: 0;
   display: flex;
   justify-content: center;
   overflow: hidden;
   /* Seen only where the window is wider than the app: the desk it lies on. */
   background: #ede6da;
-  /* A stacking context of its own, so the tab bar's underlay can sit behind the
-     shell without falling behind the page itself — see `.tabs::before`. */
-  isolation: isolate;
 }
 
 .app {
   width: 100%;
   max-width: 440px;
   height: 100%;
-  min-height: 600px;
   background: var(--paper);
   display: flex;
   flex-direction: column;
@@ -114,7 +124,8 @@ textarea {
   /* Landscape rounds the corners in from the sides. */
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
-  padding-bottom: calc(72px + var(--safe-bottom));
+  /* Der Streifen, in dem die Leiste steht. Kein Screen schreibt hier hinein. */
+  padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom));
 }
 
 .kicker {
@@ -1134,7 +1145,12 @@ textarea {
   right: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  padding: 11px 0 calc(11px + var(--safe-bottom));
+  align-items: center;
+  /* Genau der Streifen, den die Shell reserviert hat, plus das, was sich das
+     Telefon darunter selbst nimmt: das Band des Home-Indicators gehört der
+     Leiste, in der Farbe der Leiste — es ist kein Abstand unter ihr. */
+  min-height: calc(var(--tabbar-height) + var(--safe-bottom));
+  padding: 0 0 var(--safe-bottom);
   background: var(--card);
   box-shadow: 0 -1px 0 var(--border), 0 -10px 18px -12px rgba(74, 56, 42, 0.16);
   text-align: center;
