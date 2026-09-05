@@ -1,0 +1,2 @@
+# Shell-Skripte laufen auf dem Linux-Server: nie CRLF, auch nicht auf Windows ausgecheckt.
+*.sh text eol=lf
