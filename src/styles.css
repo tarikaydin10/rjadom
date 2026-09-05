@@ -613,20 +613,36 @@ textarea {
   cursor: default;
 }
 
+/* Quiet by default: a rule and a line of type, the way a footnote to the day
+   would be set. The date is months away or not yet booked nearly all the time,
+   and a component in that state has no business being the heaviest object on
+   the screen — it was a black slab, the only one in a warm paper palette, and
+   its commonest content was a prompt to go and do something. */
 .countdown {
-  background: var(--ink);
-  border-radius: var(--radius-card);
-  padding: 16px 18px;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  padding: 13px 2px 0;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
   flex-shrink: 0;
   width: 100%;
-  border: 0;
   font-family: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+/* Close enough to be an event. It takes on a card, and that it has one at all
+   is itself the message — readable across a room, which a number never is. */
+.countdown--near {
+  border: 1px solid rgba(176, 86, 60, 0.4);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  padding: 15px 17px;
+  align-items: center;
 }
 
 /* Editing happens in place, so the card grows downward instead of sending you
@@ -636,36 +652,65 @@ textarea {
   align-items: stretch;
   gap: 10px;
   cursor: default;
-}
-
-.countdown__input {
-  background: rgba(255, 252, 246, 0.06);
-  border-color: rgba(183, 158, 134, 0.4);
-  color: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  padding: 14px;
 }
 
 .countdown__kicker {
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--sand);
+  color: var(--ink-pale);
 }
 
 .countdown__where {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+
+.countdown--near .countdown__where {
   font-size: 15px;
-  color: var(--paper);
+  color: var(--ink);
+}
+
+.countdown__count {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .countdown__number {
   font-family: var(--display);
-  font-size: 40px;
+  font-size: 20px;
   line-height: 1;
-  color: var(--apricot);
+  color: var(--terracotta);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown--near .countdown__number {
+  font-size: 40px;
+}
+
+/* "today" and "tomorrow" stand in for the number, and a word set at the
+   number's size would push the sentence off the row. */
+.countdown__word {
+  font-family: var(--display);
+  font-size: 17px;
+  line-height: 1;
+  color: var(--terracotta);
+}
+
+.countdown--near .countdown__word {
+  font-size: 26px;
 }
 
 .countdown__unit {
-  font-size: 12px;
-  color: var(--sand);
+  font-size: 11px;
+  color: var(--ink-pale);
 }
 
 /* ---------- chrome ---------- */

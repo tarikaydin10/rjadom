@@ -78,10 +78,19 @@ export const en = {
 
   countdown: {
     kicker: 'Reunion',
-    // The number is rendered separately at 40px, so these are the unit alone.
+    // The number is rendered separately, so these are the unit alone.
     days: { one: 'day', few: 'days', many: 'days', other: 'days' } as Plural,
     today: 'today',
-    unset: 'Tap to set a date',
+    tomorrow: 'tomorrow',
+    // Who moves, not just where. The direction is the emotionally distinct part
+    // and each phone knows its own side, so each reads its own sentence.
+    arrives: '{name} arrives on {date}',
+    youTravel: 'You travel to {city} on {date}',
+    // Once it is today or tomorrow the date says nothing the count has not
+    // already said, so the sentence drops it.
+    arrivesSoon: '{name} arrives',
+    youTravelSoon: 'You travel to {city}',
+    unset: 'No reunion date yet',
   },
 
   net: {
@@ -205,7 +214,12 @@ export const ru: DeepStringShape<typeof en> = {
     kicker: 'Встреча',
     days: { one: 'день', few: 'дня', many: 'дней', other: 'дня' },
     today: 'сегодня',
-    unset: 'Нажми, чтобы выбрать дату',
+    tomorrow: 'завтра',
+    arrives: '{name} приезжает {date}',
+    youTravel: 'Ты едешь в {city} {date}',
+    arrivesSoon: '{name} приезжает',
+    youTravelSoon: 'Ты едешь в {city}',
+    unset: 'Встреча ещё не назначена',
   },
 
   net: {

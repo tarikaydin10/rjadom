@@ -3,8 +3,9 @@ import { useI18n } from '../i18n';
 import { CITIES, type CityId } from '../content/cities';
 import { dayAndMonth } from '../lib/format';
 import { dateKeyToMs, isValidDateKey } from '../lib/day';
-import { daysUntil } from '../data/settings';
+import { daysUntil, displayName, sidesFor } from '../data/settings';
 import { useSettings } from '../data/settings-context';
+import { getPair } from '../data/pair';
 
 /**
  * The reunion, edited where it is read.
@@ -13,7 +14,18 @@ import { useSettings } from '../data/settings-context';
  * it is not a preference but a fact that changes whenever a flight moves, and a
  * card reading "not set" that does nothing when tapped is a dead end. Content
  * belongs to be edited where you look at it.
+ *
+ * It also used to be a black slab, permanently the loudest object on a warm
+ * paper screen — and its most common state, by far, is that no date is booked
+ * yet. So the biggest thing on the page was a prompt to do something. Its
+ * weight now follows its meaning: a quiet line for a date that is months away
+ * or not yet chosen, and a card once it is close enough to be an event. That
+ * the card is there at all is then information, readable across a room.
  */
+
+/** Where the reunion stops being a fact and starts being an event. */
+const NEAR_DAYS = 30;
+
 export function CountdownCard() {
   const { t, tp, locale } = useI18n();
   const { settings, update } = useSettings();
@@ -39,7 +51,7 @@ export function CountdownCard() {
       <div className="countdown countdown--editing">
         <span className="countdown__kicker">{t('settings.reunion')}</span>
         <input
-          className="field__input countdown__input"
+          className="field__input"
           type="date"
           value={date}
           onChange={(event) => setDate(event.target.value)}
@@ -70,28 +82,46 @@ export function CountdownCard() {
 
   const { date: reunionDate, city: reunionCity } = settings.reunion;
   const days = reunionDate ? daysUntil(reunionDate) : null;
+  const near = days !== null && days <= NEAR_DAYS;
+
+  // Which of you travels is derived, not stored: the reunion city is one of the
+  // two, and each device knows which side it is standing on.
+  const sides = sidesFor(getPair()?.member ?? 'a', settings);
+
+  const sentence = (): string => {
+    if (!reunionDate) return t('countdown.unset');
+    const imminent = days !== null && days <= 1;
+    const when = dayAndMonth(dateKeyToMs(reunionDate), locale);
+    return reunionCity === sides.yours
+      ? t(imminent ? 'countdown.arrivesSoon' : 'countdown.arrives', {
+          name: displayName(sides.partnerName, locale),
+          date: when,
+        })
+      : /* The city keeps its own name here too, inside either language. */
+        t(imminent ? 'countdown.youTravelSoon' : 'countdown.youTravel', {
+          city: CITIES[reunionCity].label,
+          date: when,
+        });
+  };
 
   return (
-    <button className="countdown" onClick={() => setEditing(true)}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left' }}>
-        <span className="countdown__kicker">{t('countdown.kicker')}</span>
-        <span className="countdown__where">
-          {reunionDate
-            ? /* The city keeps its own name here too. */
-              `${dayAndMonth(dateKeyToMs(reunionDate), locale)} · ${CITIES[reunionCity].label}`
-            : t('countdown.unset')}
+    <button className={near ? 'countdown countdown--near' : 'countdown'} onClick={() => setEditing(true)}>
+      <span className="countdown__where">{sentence()}</span>
+      {days !== null && (
+        <span className="countdown__count">
+          {days <= 0 ? (
+            <span className="countdown__word">{t('countdown.today')}</span>
+          ) : days === 1 ? (
+            <span className="countdown__word">{t('countdown.tomorrow')}</span>
+          ) : (
+            <>
+              <span className="countdown__number">{days}</span>
+              {/* Russian needs день / дня / дней — Intl.PluralRules picks the form. */}
+              <span className="countdown__unit">{tp('countdown.days', days)}</span>
+            </>
+          )}
         </span>
-      </div>
-      {days !== null &&
-        (days <= 0 ? (
-          <span className="countdown__number">{t('countdown.today')}</span>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span className="countdown__number">{days}</span>
-            {/* Russian needs день / дня / дней — Intl.PluralRules picks the form. */}
-            <span className="countdown__unit">{tp('countdown.days', days)}</span>
-          </div>
-        ))}
+      )}
     </button>
   );
 }
