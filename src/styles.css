@@ -973,7 +973,11 @@ button.status__now:active {
 .tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  padding: 11px 0 max(11px, var(--safe-bottom));
+  padding: 11px 0;
+  /* Safari sometimes drops the entire rule when max() is used with a var() containing env() in a shorthand property.
+     Declaring it separately with a fallback ensures the nav bar correctly expands into the safe area. */
+  padding-bottom: 11px;
+  padding-bottom: max(11px, env(safe-area-inset-bottom));
   background: var(--card);
   box-shadow: 0 -1px 0 var(--border), 0 -10px 18px -12px rgba(74, 56, 42, 0.16);
   text-align: center;
