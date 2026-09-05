@@ -21,10 +21,10 @@
 
   --gutter: 22px;
   --radius-card: 14px;
-  --band-height: 278px;
+  --band-height: 246px;
   /* Where the sky stops and the ground starts, inside the band's own
      coordinates. Mirrors HORIZON in sky/engine.ts. */
-  --horizon: 186px;
+  --horizon: 160px;
 
   /* The phone's own obstructions, named once and used everywhere.
      Routed through variables rather than calling env() at each site: it keeps
@@ -252,7 +252,7 @@ textarea {
     opacity: 1;
   }
   to {
-    transform: translateY(186px);
+    transform: translateY(var(--horizon));
     opacity: 0;
   }
 }
@@ -272,7 +272,7 @@ textarea {
     opacity: 1;
   }
   to {
-    transform: translate(0, 186px);
+    transform: translate(0, var(--horizon));
     opacity: 0;
   }
 }
@@ -422,21 +422,19 @@ textarea {
 
 .sky__name {
   font-size: 10px;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  font-weight: 600;
 }
 
 .sky__time {
   font-family: var(--display);
-  font-size: 32px;
-  line-height: 1;
+  font-size: 31px;
+  line-height: 1.05;
   font-variant-numeric: tabular-nums;
 }
 
 .sky__note {
-  font-size: 12px;
-  margin-top: 2px;
+  font-size: 11px;
 }
 
 /* ---------- status line ---------- */

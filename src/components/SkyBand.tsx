@@ -201,7 +201,7 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
         >
           {/* A track is only drawn while its body is actually visible. A line
               with nothing on it explains nothing — it just looks like a chart. */}
-          {(row.moon.opacity > 0.05 ? day.paths.moon : []).map((segment, index) => (
+          {day.paths.moon.map((segment, index) => (
             <path
               key={`m${index}`}
               d={segment.d}
@@ -212,7 +212,7 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
               vectorEffect="non-scaling-stroke"
             />
           ))}
-          {(row.sun.opacity > 0 ? day.paths.sun : []).map((segment, index) => (
+          {day.paths.sun.map((segment, index) => (
             <path
               key={`s${index}`}
               d={segment.d}

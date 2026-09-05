@@ -28,9 +28,9 @@ export const SLOTS = 288; // one day in five-minute steps
  * cost nothing because the names floated in the sky, over a scrim that dimmed
  * the sky to make them legible. Land under a horizon needs no scrim.
  */
-export const BAND_HEIGHT = 278;
-export const HORIZON = 186;
-const APEX = 112;
+export const BAND_HEIGHT = 246;
+export const HORIZON = 160;
+const APEX = 24;
 /**
  * The altitude that reaches the top of the band.
  *
