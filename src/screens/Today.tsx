@@ -86,8 +86,8 @@ export function Today() {
 
     const started = performance.now();
     const distance = Math.abs(Date.now() - from);
-    // A few hours winds back briskly; a fortnight takes a breath longer.
-    const duration = Math.min(2200, 600 + (distance / (24 * 60 * 60 * 1000)) * 260);
+    // A few hours winds back briskly; a fortnight takes a breath longer. Made slower per user request.
+    const duration = Math.min(3500, 1000 + (distance / (24 * 60 * 60 * 1000)) * 500);
     const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
 
     const step = (frame: number) => {
