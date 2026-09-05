@@ -145,7 +145,7 @@ export function Today() {
         onScrubEnd={() => undefined}
       />
 
-      <div className="status">
+      <div className={`status ${scrubMs !== null ? 'status--preview' : ''}`}>
         <span className="status__text">{t(`sky.status.${statusFor(row, yourCity)}`)}</span>
         {scrubMs === null ? (
           <span className="status__now" aria-hidden="true">

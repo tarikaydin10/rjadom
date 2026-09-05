@@ -130,6 +130,21 @@ textarea {
   cursor: grabbing;
 }
 
+/* Subtle drag handle to indicate the sky can be swiped */
+.sky::after {
+  content: '';
+  position: absolute;
+  top: calc(var(--safe-top) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  z-index: 10;
+}
+
 .sky__layer {
   position: absolute;
   inset: 0;
@@ -425,12 +440,21 @@ textarea {
 /* ---------- status line ---------- */
 
 .status {
-  padding: 9px var(--gutter) 0;
+  padding: 16px var(--gutter) 0;
   display: flex;
-  align-items: baseline;
+  align-items: center; /* changed from baseline to center for the pill button */
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
+  transition: opacity 0.3s ease;
+}
+
+.status--preview {
+  /* Optional: we can subtly shift the background or add a state change here */
+}
+
+.status--preview .status__text {
+  opacity: 0.6; /* Dim the static text to emphasize the back button */
 }
 
 .status__text {
@@ -438,6 +462,7 @@ textarea {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--terracotta-dark);
+  transition: opacity 0.3s ease;
 }
 
 .status__now {
@@ -450,6 +475,22 @@ textarea {
   padding: 0;
   font-family: inherit;
   cursor: pointer;
+}
+
+/* When the time is scrubbed, the "now" text becomes a prominent button */
+button.status__now {
+  background: var(--terracotta);
+  color: var(--paper);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(176, 86, 60, 0.25);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+}
+
+button.status__now:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 6px rgba(176, 86, 60, 0.2);
 }
 
 /* ---------- content ---------- */
