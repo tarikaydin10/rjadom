@@ -3,16 +3,19 @@
  *
  * A plain white dot is a placeholder; the phase is free information — SunCalc
  * already knows it — and it is the difference between "there is a moon" and
- * "that is tonight's moon". The lit limb is turned to face wherever the sun is
- * drawn in the band, which is both what the eye expects and what is true: the
- * moon is lit by the sun, so the bright side points at it even when it is below
- * the horizon.
+ * "that is tonight's moon".
+ *
+ * The lit limb faces the sun, always, and that single rule is the whole
+ * orientation. Waxing and waning are not a second fact needing a second
+ * transform: they are what it looks like when the sun is on one side rather than
+ * the other. Mirroring the shape on top of the rotation, as this first did,
+ * turned the light a further 180° and pointed a waning moon's bright side away
+ * from the sun.
  */
 interface Props {
   size: number;
   /** Lit fraction, 0 new to 1 full. */
   illuminated: number;
-  waxing: boolean;
   /** Degrees to turn the lit limb, so it faces the sun. */
   tilt: number;
   opacity: number;
@@ -21,7 +24,7 @@ interface Props {
 
 const LIT = '#EFEAF0';
 
-export function MoonDisc({ size, illuminated, waxing, tilt, opacity, style }: Props) {
+export function MoonDisc({ size, illuminated, tilt, opacity, style }: Props) {
   const r = 50;
   const lit = Math.min(1, Math.max(0, illuminated));
 
@@ -42,7 +45,7 @@ export function MoonDisc({ size, illuminated, waxing, tilt, opacity, style }: Pr
       style={{ ...style, opacity, overflow: 'visible' }}
       aria-hidden="true"
     >
-      <g transform={`rotate(${tilt.toFixed(1)}) scale(${waxing ? 1 : -1} 1)`}>
+      <g transform={`rotate(${tilt.toFixed(1)})`}>
         {/* The unlit disc stays faintly visible — earthshine, and it keeps the
             moon from looking like a stray fragment on a dark sky. */}
         <circle r={r} fill={LIT} opacity={0.13} />

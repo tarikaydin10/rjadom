@@ -265,7 +265,6 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo,
       <MoonDisc
           size={16}
           illuminated={row.moon.illuminated}
-          waxing={row.moon.waxing}
           tilt={row.moon.tilt}
           opacity={row.moon.opacity}
           style={{ position: 'absolute', left: `${row.moon.x}%`, top: row.moon.y, margin: '-8px 0 0 -8px' }}

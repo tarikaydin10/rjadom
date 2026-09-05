@@ -135,8 +135,6 @@ export interface SkyRow {
     opacity: number;
     /** Lit fraction, 0 new to 1 full. */
     illuminated: number;
-    /** True while the moon is filling up, which decides the side the light is on. */
-    waxing: boolean;
     /** Degrees to turn the lit limb so it faces the sun. */
     tilt: number;
   };
@@ -347,7 +345,6 @@ export function buildDay(dayStart: number): SkyDay {
         y: moonPos.y,
         opacity: moonAlt > 0 && bright < 8 ? Math.min(0.9, Math.max(0, (8 - bright) / 14)) : 0,
         illuminated: illumination.fraction,
-        waxing: illumination.phase < 0.5,
         tilt: limbTilt(midAlt, mid.azimuth, moonAlt, moon.azimuth),
       },
       starOpacity: Math.min(1, Math.max(0, (-4 - bright) / 10)),
