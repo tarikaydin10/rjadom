@@ -1,6 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { TabBar, type TabId } from './components/TabBar';
-import { ViewportDebug } from './components/ViewportDebug';
 import { Today } from './screens/Today';
 import { Us } from './screens/Us';
 import { Placeholder } from './screens/Placeholder';
@@ -29,7 +28,6 @@ export function App() {
   if (!unlocked) {
     return (
       <div className="app">
-        <ViewportDebug />
         <Lock onUnlocked={() => force((n) => n + 1)} />
       </div>
     );
@@ -37,14 +35,11 @@ export function App() {
 
   return (
     <div className="app">
-      <ViewportDebug />
       {tab === 'today' && <Today />}
       {tab === 'map' && <Placeholder title="tabs.map" note="soon.map" />}
       {tab === 'chronicle' && <Placeholder title="tabs.chronicle" note="soon.chronicle" />}
       {tab === 'us' && <Us />}
       <TabBar active={tab} onChange={setTab} />
-      {/* Vorübergehend, bis der Rahmen im Standalone-Modus geklärt ist. */}
-      <ViewportDebug />
     </div>
   );
 }

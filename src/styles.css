@@ -23,20 +23,6 @@
   --gutter: 22px;
   --radius-card: 14px;
 
-  /* Die Tab-Leiste besteht aus zwei getrennten Dingen, und genau das war der
-     Fehler an der alten Formel `max(38px, calc(24px + safe-bottom))`: sie hat
-     beide in eine Zahl geworfen und dabei das Gegenteil ihres Kommentars getan.
-     Im Browser meldet iOS safe-bottom als 0 — die Safari-Leiste steht ja schon
-     dort — und es kamen 38px heraus; im Standalone springt der Wert auf 34px,
-     und max() wählte 58px. Die Leiste wurde also ausgerechnet dort am höchsten,
-     wo sie schlank sein sollte.
-
-     Jetzt getrennt: --tabbar-content ist die Zeile mit den Beschriftungen,
-     --safe-bottom der Streifen, den der Home-Indicator ohnehin beansprucht und
-     in den nichts Anklickbares gehört. */
-  --tabbar-content: 38px;
-  --tabbar-height: calc(var(--tabbar-content) + var(--safe-bottom));
-
   /* --band-height and --horizon are deliberately absent here. They are the
      band's own geometry, they belong to sky/engine.ts, which draws the sun and
      the moon in them, and `SkyBand` publishes them onto the band element. They
@@ -57,15 +43,6 @@
   color-scheme: light;
 }
 
-/* Auf dem Home-Bildschirm gibt es keine Browser-Leiste mehr, die den unteren
-   Rand füllt — der Home-Indicator tut es. Die Beschriftungszeile darf dann
-   kürzer ausfallen, sonst addieren sich beide zu einem wuchtigen Block. */
-@media (display-mode: standalone) {
-  :root {
-    --tabbar-content: 26px;
-  }
-}
-
 * {
   box-sizing: border-box;
 }
@@ -81,12 +58,8 @@ body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  /* Die Fläche unter allem trägt die Farbe der Tab-Leiste, nicht die des
-     Papiers. Die Leiste ist das, was an der Unterkante steht; was die Shell
-     dort nicht abdeckt — ein Telefon, das dem Viewport Höhe weggenommen hat —
-     ist damit in derselben Farbe gemalt und liest sich als mehr Leiste. Ein
-     anderes Beige in diesem Streifen war die Naht, die die Leiste über dem
-     unteren Bildschirmrand schweben ließ. */
+  /* Same colour as the tab bar: whatever the shell leaves uncovered at the
+     bottom edge reads as bar, not as a seam. */
   background: var(--card);
   /* No double-tap zoom; taps stay instant. */
   touch-action: manipulation;
@@ -140,8 +113,6 @@ textarea {
   /* Landscape rounds the corners in from the sides. */
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
-  /* Der Streifen, in dem die Leiste steht. Kein Screen schreibt hier hinein. */
-  padding-bottom: var(--tabbar-height);
 }
 
 .kicker {
@@ -1162,24 +1133,22 @@ textarea {
   flex-shrink: 0;
 }
 
+/* Das letzte Flex-Kind der Shell, nicht absolut positioniert: die Screens
+   darüber sind `flex: 1` und scrollen selbst, die Leiste nimmt sich unten, was
+   sie braucht — eine Zeile plus den Streifen des Home-Indicators. Keine
+   Höhenvariable, kein reserviertes Padding, kein Standalone-Sonderfall. */
 .tabs {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
-  box-sizing: border-box;
-  height: var(--tabbar-height);
-  padding: 0 0 var(--safe-bottom);
+  padding: 12px 0 calc(12px + var(--safe-bottom));
   background: var(--card);
   box-shadow: 0 -1px 0 var(--border), 0 -10px 18px -12px rgba(74, 56, 42, 0.16);
   text-align: center;
   font-size: 11px;
   letter-spacing: 0.1em;
   color: var(--ink-muted);
-  z-index: 20;
 }
 
 .tabs__item {
