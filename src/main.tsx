@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { I18nProvider } from './i18n';
 import { SettingsProvider } from './data/settings-context';
+import { holdTheBottomEdge } from './lib/viewport';
 import './styles.css';
 
 /**
@@ -67,6 +68,7 @@ function keepFresh(): void {
 }
 
 keepFresh();
+holdTheBottomEdge();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('missing #root');

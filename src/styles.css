@@ -54,7 +54,13 @@ body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  background: #ede6da;
+  /* The canvas under everything is the app's own paper, not the desk it lies
+     on. Whatever the shell fails to cover — a strip along the bottom edge, on a
+     phone that has taken height away from the viewport — is painted with this
+     colour, and a different beige down there is the seam that made the tab bar
+     look like it was hovering above the bottom of the screen. Now it would read
+     as more of the bar. */
+  background: var(--paper);
   /* No double-tap zoom; taps stay instant. */
   touch-action: manipulation;
 }
@@ -81,13 +87,24 @@ textarea {
 
 /* Pinned to the viewport rectangle rather than sized by it. 100dvh moves while
    a browser's toolbars come and go, which is what let the tab bar drift off the
-   bottom edge; a fixed shell cannot drift. */
+   bottom edge; a fixed shell cannot drift.
+
+   But it can be pinned to the wrong rectangle. The layout viewport is only as
+   tall as the phone says it is, and iOS says it is shorter than the screen for
+   as long as a keyboard is up — and, once up, sometimes for good. Every attempt
+   at this bar so far has assumed 100% meant the screen. So the shell takes
+   whichever is taller: the viewport now, or the tallest this viewport has been
+   (lib/viewport.ts, home-screen app only). The second can never overshoot — it
+   is a height this device really had, in this orientation. */
 #root {
   position: fixed;
   inset: 0;
+  height: max(100%, var(--screen-height, 0px));
   display: flex;
   justify-content: center;
   overflow: hidden;
+  /* Seen only where the window is wider than the app: the desk it lies on. */
+  background: #ede6da;
 }
 
 .app {
