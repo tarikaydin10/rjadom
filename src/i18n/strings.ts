@@ -34,7 +34,10 @@ export const en = {
     polarNight: 'sun stays down',
     now: 'now',
     backToNow: 'back to now',
-    scrubHint: 'Drag across the sky to travel through the day',
+    // The rail's name for anyone who cannot see it. It names the three ways in,
+    // because a slider that is only reachable by thumb is reachable by one
+    // person in the pair on a good day.
+    railLabel: 'Time — drag, tap or use the arrow keys to travel',
     label: 'Sky above both cities',
   },
 
@@ -172,7 +175,7 @@ export const ru: DeepStringShape<typeof en> = {
     polarNight: 'солнце не восходит',
     now: 'сейчас',
     backToNow: 'вернуться к сейчас',
-    scrubHint: 'Проведи по небу, чтобы пройти день',
+    railLabel: 'Время — тяни, нажимай или листай стрелками',
     label: 'Небо над обоими городами',
   },
 

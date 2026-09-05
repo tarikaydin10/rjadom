@@ -147,54 +147,6 @@ textarea {
   cursor: grabbing;
 }
 
-/* The band's own affordance: a surface that moves sideways through the day.
-   It used to be a 32×3 pill in flat white — the iOS grammar for a sheet you
-   pull DOWN, which is the one axis this gesture does not have, and at 10% white
-   it was invisible over a noon sky anyway. The mark names the axis instead, and
-   inherits the sky's ink so it reads at every hour. */
-.sky__grip {
-  position: absolute;
-  top: calc(var(--safe-top) + 9px);
-  left: 0;
-  right: 0;
-  padding: 0 var(--gutter);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  /* The gesture belongs to the band underneath; this is only the sign for it. */
-  pointer-events: none;
-  z-index: 4;
-}
-
-/* The mark is permanent, so it stays quiet. */
-.sky__grip svg {
-  opacity: 0.5;
-}
-
-/* The sentence is temporary, so it may speak up — said once, then never again;
-   see lib/learned.ts. A hint that outstays its welcome is the first thing a
-   reader learns to stop seeing, and one too faint to read was never a hint at
-   all. It inherits the sky's ink and the shadow that keeps that ink legible at
-   any hour. */
-.sky__hint {
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  text-align: center;
-  opacity: 0.88;
-  animation: hint-in 900ms 400ms ease-out both;
-}
-
-@keyframes hint-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 0.88;
-  }
-}
-
 .sky__layer {
   position: absolute;
   inset: 0;
@@ -505,21 +457,240 @@ textarea {
   font-size: 11px;
 }
 
-/* ---------- status line ---------- */
+/* ---------- time rail ---------- */
 
-.status {
-  padding: 16px var(--gutter) 0;
+/* The instrument, under the picture.
+ *
+ * What was here before was a gesture with no object: a 58px chevron mark over
+ * the sky at half opacity, and one sentence that was shown once and then never
+ * again. After that first day nothing on the screen said the sky moved, how far
+ * it could be moved, or where in the week you had ended up — and a day is a
+ * band width, so reaching the fortnight the app allows meant fourteen full
+ * swipes in the dark. A symbol has to be learned; an object is read.
+ *
+ * So time is given an object. A strip of the actual light between the two
+ * cities — the same colour table the sky above is painted from — running under
+ * a fixed reading head. It is a thing with a texture that obviously slides, it
+ * shows where the days break and which day you are on, it holds a mark at now
+ * that you can aim for, and it answers to a thumb, a tap, a flick and the arrow
+ * keys. The band above keeps its drag, at exactly this scale, as the shortcut
+ * for anyone who already knows it.
+ *
+ * Furniture, deliberately quiet at rest: a nine-pixel hairline with one ring in
+ * it. It grows, and the hours and dates fade up, only while it is being used.
+ */
+.rail {
+  position: relative;
+  height: 46px;
+  flex-shrink: 0;
+
+  /* Resting geometry. Everything below reads these, and only these change when
+     the rail wakes up, so the two states cannot drift apart. */
+  --strip-h: 11px;
+  --head-top: 21px;
+  --head-h: 22px;
+  --detail: 0;
+  --wake: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.rail[data-active] {
+  --strip-h: 24px;
+  --head-top: 17px;
+  --head-h: 28px;
+  --detail: 1;
+}
+
+/* A pointer that can hover is a pointer that can explore: on a desktop the rail
+   opens under the cursor before anything is pressed. */
+@media (hover: hover) {
+  .rail:hover {
+    --strip-h: 24px;
+    --head-top: 17px;
+    --head-h: 28px;
+    --detail: 1;
+  }
+}
+
+/* How far you have gone, and the way back — "now", "in 5 hours", «через 3 дня».
+   The clocks in the band give the hour and cannot give the day, which is the
+   one thing a fortnight of travel actually changes.
+
+   Read from the gutter, like the status line below it, rather than centred over
+   the reading head: the head is always in the middle and needs no caption, and
+   a centred phrase and a right-hand button collide the moment the language is
+   Russian — «через 6 часов» and «вернуться к сейчас» do not both fit around a
+   centre line on a phone. */
+.rail__readout {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  right: 0;
+  padding: 0 var(--gutter);
   display: flex;
-  /* Centred rather than on the baseline: the "back to now" pill is a box, not a
-     line of type, and a baseline hangs it too low against the status text. */
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.rail__when {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-pale);
+  transition: color 0.3s ease;
+}
+
+.rail--away .rail__when {
+  color: var(--terracotta);
+}
+
+/* The way home, beside the thing that took you away from it. It used to sit in
+   the status line below, a whole component away from the gesture that made it
+   necessary. */
+.rail__back {
+  pointer-events: auto;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--terracotta);
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* The whole height is the target, not just the visible strip: a nine-pixel
+   hairline is a thing to look at, never a thing to hit. */
+.rail__track {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* Horizontal here, vertical to the page — the same division the band makes. */
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.rail__track:active {
+  cursor: grabbing;
+}
+
+.rail__track:focus-visible {
+  outline: 2px solid var(--terracotta);
+  outline-offset: -2px;
+  border-radius: 5px;
+}
+
+/* Six days, painted once and then only moved.
+ *
+ * Width and position are in time, not in pixels: the element is as many rail
+ * widths as it holds days, and the shown moment sets a single transform. So a
+ * scrub repaints nothing and relayouts nothing — it hands the compositor one
+ * translation — and the gradient is rebuilt only when time runs off the end of
+ * what is drawn, which is a few times a session. */
+.rail__strip {
+  position: absolute;
+  left: 50%;
+  top: 32px;
+  height: var(--strip-h);
+  will-change: transform;
+  box-shadow: inset 0 0 0 1px rgba(36, 31, 27, 0.08);
+  transition: height var(--wake);
+}
+
+/* Three-hour hairlines, drawn by the background rather than by forty-eight
+   elements. `--tick-period` comes from the component, which owns the span. */
+.rail__ticks {
+  position: absolute;
+  inset: 0;
+  opacity: calc(var(--detail) * 0.5);
+  transition: opacity var(--wake);
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 250, 240, 0.55) 0 1px,
+    rgba(255, 250, 240, 0) 1px var(--tick-period)
+  );
+}
+
+/* Where one day becomes the next. Light line, dark edge: the strip runs from a
+   pale noon to a near-black midnight, and a mark in one ink alone disappears at
+   one end or the other. */
+.rail__day {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px solid rgba(255, 250, 240, 0.6);
+  box-shadow: -1px 0 0 rgba(20, 16, 28, 0.22);
+}
+
+/* For the same reason the date rides a chip rather than sitting on the colour:
+   nine-pixel type has no weight to spare, and neither white nor dark ink holds
+   across a whole day's worth of sky. */
+.rail__date {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 1px 3px;
+  border-radius: 2px;
+  background: rgba(20, 16, 28, 0.28);
+  color: rgba(255, 249, 239, 0.92);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: var(--detail);
+  transition: opacity var(--wake);
+}
+
+/* Now, as a place on the strip. At rest the reading head is docked in it; wound
+   away, it is the mark to aim back at — and the rail catches there. */
+.rail__anchor {
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  border: 1.5px solid var(--terracotta);
+  background: rgba(244, 239, 230, 0.4);
+  box-shadow: 0 0 0 1px rgba(244, 239, 230, 0.55);
+}
+
+/* The reading head: fixed, straddling the strip, so what it points at is always
+   the moment the sky above is showing. */
+.rail__head {
+  position: absolute;
+  left: 50%;
+  top: var(--head-top);
+  height: var(--head-h);
+  width: 1.5px;
+  margin-left: -0.75px;
+  border-radius: 1px;
+  background: var(--terracotta);
+  box-shadow: 0 0 0 1px rgba(244, 239, 230, 0.6);
+  pointer-events: none;
+  transition:
+    top var(--wake),
+    height var(--wake);
+}
+
+/* ---------- status line ---------- */
+
+/* Now only the reading — "Twilight for both of you". The word "now" and the way
+   back to it moved onto the rail, which is where the leaving happens; a control
+   for time that lives one component away from the gesture for time is a control
+   nobody connects to what they just did. */
+.status {
+  padding: 10px var(--gutter) 0;
   flex-shrink: 0;
 }
 
-/* While the sky is wound away from now, the reading of it steps back so the way
-   out of the preview is the loudest thing on the line. */
+/* While the sky is wound away from now, the reading of it steps back: it is a
+   description of a moment you are only visiting. */
 .status--preview .status__text {
   opacity: 0.6;
 }
@@ -530,33 +701,6 @@ textarea {
   text-transform: uppercase;
   color: var(--terracotta-dark);
   transition: opacity 0.3s ease;
-}
-
-.status__now {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--terracotta);
-  white-space: nowrap;
-  background: none;
-  border: 0;
-  padding: 0;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-/* When the time is scrubbed, the "now" text becomes a prominent ghost button */
-button.status__now {
-  background: transparent;
-  color: var(--terracotta);
-  border: 1px solid var(--terracotta);
-  border-radius: 999px;
-  padding: 6px 14px;
-  font-weight: 500;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-button.status__now:active {
-  transform: scale(0.96);
 }
 
 /* ---------- content ---------- */

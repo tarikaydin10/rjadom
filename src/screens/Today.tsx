@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SkyBand } from '../components/SkyBand';
+import { TimeRail } from '../components/TimeRail';
 import { QuestionBlock } from '../components/QuestionBlock';
 import { AnswerPair } from '../components/AnswerPair';
 import { CountdownCard } from '../components/CountdownCard';
@@ -79,11 +80,15 @@ export function Today() {
     rewind.current = null;
   };
 
-  const backToNow = () => {
+  const backToNow = (wind: boolean) => {
+    cancelRewind();
     const from = scrubMs;
     if (from === null) return;
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) {
+    // The rail catches at now on its own, within about half an hour of it.
+    // Winding back from there would be a journey of nine pixels, which is not a
+    // journey — it is a stutter.
+    if (!wind || reduced) {
       setScrubMs(null);
       return;
     }
@@ -145,17 +150,17 @@ export function Today() {
         onScrubTo={scrubTo}
       />
 
+      <TimeRail
+        now={now}
+        ms={shownMs}
+        live={scrubMs === null}
+        limitMs={SCRUB_LIMIT_MS}
+        onScrubTo={scrubTo}
+        onNow={backToNow}
+      />
+
       <div className={`status ${scrubMs !== null ? 'status--preview' : ''}`}>
         <span className="status__text">{t(`sky.status.${statusFor(row, yourCity)}`)}</span>
-        {scrubMs === null ? (
-          <span className="status__now" aria-hidden="true">
-            {t('sky.now')}
-          </span>
-        ) : (
-          <button className="status__now" onClick={backToNow}>
-            {t('sky.backToNow')}
-          </button>
-        )}
       </div>
 
       {line && <div className="netline">{line}</div>}

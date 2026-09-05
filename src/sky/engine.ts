@@ -74,16 +74,40 @@ function mix(a: string, b: string, t: number): string {
   return `rgb(${step(ar, br)},${step(ag, bg)},${step(ab, bb)})`;
 }
 
-/** Vertical three-stop gradient for a sun altitude in degrees. */
-export function gradientFor(altDeg: number): string {
+/** The three colours of the sky at a sun altitude, top to bottom. */
+function stopsFor(altDeg: number): [string, string, string] {
   let i = 0;
   while (i < SKY_STOPS.length - 1 && altDeg < SKY_STOPS[i + 1]!.a) i++;
   const hi = SKY_STOPS[i]!;
   const lo = SKY_STOPS[Math.min(SKY_STOPS.length - 1, i + 1)]!;
   const span = hi.a - lo.a;
   const t = span === 0 ? 0 : Math.min(1, Math.max(0, (hi.a - altDeg) / span));
-  const c = hi.c.map((h, k) => mix(h, lo.c[k]!, t));
+  return hi.c.map((h, k) => mix(h, lo.c[k]!, t)) as [string, string, string];
+}
+
+/** Vertical three-stop gradient for a sun altitude in degrees. */
+export function gradientFor(altDeg: number): string {
+  const c = stopsFor(altDeg);
   return `linear-gradient(180deg, ${c[0]} 0%, ${c[1]} 52%, ${c[2]} 100%)`;
+}
+
+/**
+ * One colour for the sky between the two cities at one instant.
+ *
+ * The band paints an hour as a gradient because it is three hundred pixels
+ * tall; the time rail paints a whole week across the same width and has ten
+ * pixels to do it in, so it needs a single colour per moment rather than a
+ * gradient per moment. The middle stop is the one to take — the horizon band,
+ * where dawn actually shows — and it comes from the same table, so a strip of
+ * rail and the sky above it cannot disagree about what six in the morning
+ * looks like.
+ *
+ * Read at the midpoint, like the sun and moon in the band: neither city owns
+ * the light in the rail either.
+ */
+export function toneAt(ms: number): string {
+  const { altitude } = SunCalc.getPosition(new Date(ms), MIDPOINT.lat, MIDPOINT.lon);
+  return stopsFor(altitude)[1];
 }
 
 /**

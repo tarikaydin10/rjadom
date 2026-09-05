@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { CITIES, type CityId } from '../content/cities';
 import type { SkyDay, SkyRow } from '../sky/engine';
@@ -11,7 +11,6 @@ import { conditionKey, observationAt, type WeatherCache } from '../weather/openm
 import { WeatherLayer } from './WeatherLayer';
 import { clock, roundTemp } from '../lib/format';
 import { DAY_MS } from '../lib/day';
-import { hasLearned, markLearned, SCRUB } from '../lib/learned';
 import { useI18n } from '../i18n';
 
 interface Props {
@@ -88,7 +87,6 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo 
   /** The latest position, waiting for a frame. See `onPointerMove`. */
   const pending = useRef<number | null>(null);
   const frame = useRef<number | null>(null);
-  const [learnedScrub, setLearnedScrub] = useState(() => hasLearned(SCRUB));
 
   useEffect(
     () => () => {
@@ -98,10 +96,12 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo 
   );
 
   /**
-   * The design's time slider was a demo tool and the handoff says so — in the
-   * real app it becomes a gesture. Dragging the width of the band moves through
-   * a whole day; letting go returns nothing, and the "back to now" control in
-   * the status line resets.
+   * The band's own drag: a shortcut, not the affordance.
+   *
+   * Dragging the width of the band moves through a whole day — the same scale
+   * as the rail below, so a hand that learned it there finds it here. Nothing
+   * on the band advertises it any more, and nothing needs to: the rail is the
+   * thing that says time can be moved, and it is two centimetres away.
    */
   const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -116,11 +116,6 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo 
       if (Math.abs(dx) < DRAG_THRESHOLD_PX) return;
       state.engaged = true;
       event.currentTarget.setPointerCapture(event.pointerId);
-      // Learned by doing. The hint has done its job and never returns.
-      if (!learnedScrub) {
-        markLearned(SCRUB);
-        setLearnedScrub(true);
-      }
     }
     // Right is later, always. This gesture replaces the prototype's time slider,
     // so it keeps a slider's convention rather than behaving like a surface being
@@ -247,20 +242,12 @@ export function SkyBand({ row, day, ms, leftCity, rightCity, weather, onScrubTo 
         <StarField />
       </div>
 
-      {/* What the band is: a surface you push sideways to move through the day.
-          Two chevrons either side of a line name that axis; they take the sky's
-          own ink, so they are legible at noon as well as at midnight. Under them,
-          until the gesture has been used once, the sentence that says it in
-          words — after that the mark alone is enough. */}
-      <div className="sky__grip" style={{ color: row.text.secondary, textShadow: row.text.shadow }}>
-        <svg width="58" height="8" viewBox="0 0 58 8" fill="none" aria-hidden="true">
-          <path d="M6 1.2 2 4l4 2.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M11 4h36" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
-          <path d="M52 1.2 56 4l-4 2.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        {!learnedScrub && <span className="sky__hint">{t('sky.scrubHint')}</span>}
-      </div>
-
+      {/* Nothing here names the gesture any more. The band used to carry a
+          chevron mark and, once, a sentence — a sign for a control that was not
+          there, over the one picture on the screen. The control is now a real
+          object directly below (see `TimeRail`), at exactly this scale: a band
+          width and a rail width are both one day, so the drag here is the same
+          movement, kept as a shortcut for a hand that already knows it. */}
       <div className="sky__frame">
 
         {/* The tracks the sun and moon actually take today, computed from the same
