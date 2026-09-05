@@ -69,6 +69,51 @@ function keepFresh(): void {
 
 keepFresh();
 
+/**
+ * Give the screen back to iOS after the keyboard.
+ *
+ * In a home-screen app the first keyboard takes the top inset off the layout
+ * viewport — 62pt on a Dynamic Island phone — and iOS does not put it back
+ * when the keyboard goes. The viewport stays that much shorter than the screen
+ * until the app is force-quit, and everything measured against it (dvh, a
+ * sticky tab bar) stops that far above the bottom edge, with bare background
+ * beneath. No meta tag prevents it; a scrolling document does not either.
+ *
+ * What works is making iOS measure again: hide the root for one frame and show
+ * it. Done only when the viewport really is shorter than the screen — in
+ * standalone with viewport-fit=cover the two are the same height — so a page
+ * that never lost anything never blinks. Twice, because the keyboard is still
+ * animating away when the field loses focus.
+ */
+function healViewport(): void {
+  if (!window.matchMedia('(display-mode: standalone)').matches) return;
+
+  const short = (): boolean => {
+    const scale = window.visualViewport?.scale ?? 1;
+    const viewport = Math.max(window.innerWidth, window.innerHeight) * scale;
+    const screen = Math.max(window.screen.width, window.screen.height);
+    return viewport < screen - 2;
+  };
+
+  const heal = () => {
+    if (!short()) return;
+    const root = document.getElementById('root');
+    if (!root) return;
+    const y = window.scrollY;
+    root.style.display = 'none';
+    void root.offsetHeight;
+    root.style.display = '';
+    window.scrollTo(0, y);
+  };
+
+  document.addEventListener('focusout', () => {
+    window.setTimeout(heal, 150);
+    window.setTimeout(heal, 600);
+  });
+}
+
+healViewport();
+
 // Before the first render, because the passphrase and the language are both
 // read while it is being built.
 carryOverStorage();
