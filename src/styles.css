@@ -127,6 +127,7 @@ textarea {
   /* Landscape rounds the corners in from the sides. */
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
+  padding-bottom: calc(44px + var(--safe-bottom));
 }
 
 .kicker {
@@ -1139,29 +1140,13 @@ textarea {
   flex-shrink: 0;
 }
 
-/* The bar reaches the bottom edge, and now looks as though it does.
- *
- * Two things kept it from doing so, and both are fixed here.
- *
- * The cushion was written `max(11px, env(safe-area-inset-bottom))`, with a plain
- * `11px` declared above it as a fallback. On WebKit that pair is a trap: when
- * the `max()` line is not honoured the fallback is, so the bar quietly comes out
- * eleven pixels tall at the bottom and the phone's home-indicator strip is left
- * over as bare paper below it — which is the band under the labels. It is a
- * `calc()` now, an addition rather than a comparison, and it goes through
- * `--safe-bottom` like every other inset in this file: one place to read, and a
- * value a test can stand in front of the layout.
- *
- * The cushion is also genuinely additive, which is what it was always meant to
- * be. `max()` said "eleven pixels, or the indicator strip, whichever is more" —
- * so on a phone the labels sat right against the indicator with no breathing
- * room of their own. Eleven pixels *plus* the strip gives the labels the same
- * air at the bottom as at the top, above a strip that is the platform's and must
- * stay empty: the indicator swallows swipes there, so nothing tappable may sit
- * in it.
- *
- * The strip is painted twice on purpose — see `.tabs::after`. */
 .tabs {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 440px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   padding: 11px 0 calc(11px + var(--safe-bottom));
@@ -1171,57 +1156,7 @@ textarea {
   font-size: 11px;
   letter-spacing: 0.1em;
   color: var(--ink-muted);
-  flex-shrink: 0;
-}
-
-/* The bar's surface, carried past the bar's own box.
- *
- * Twice, because there are two ways the bottom edge can go bare and they need
- * opposite answers.
- *
- * `::after` is painted ON TOP, exactly the height of the inset. It covers the
- * home-indicator strip when the gap is INSIDE the shell — the bar's own cushion
- * having come out short. That is the bug fixed above, and this is the second
- * lock on it.
- *
- * `::before` is painted BEHIND the shell, and deep. It covers the other case:
- * the shell itself stopping above the glass, which is what happens whenever the
- * visual viewport grows past the layout one — Safari collapsing its toolbar. A
- * fixed element cannot know where the bar's bottom edge ended up, so this one
- * simply lies under everything and lets the page paint over it; the only place
- * it shows through is a gap, where it reads as the bar continuing to the edge
- * rather than as bare paper. `#root` isolates, so "behind" means behind the
- * shell and not behind the page.
- *
- * Both are scoped to the app's column — on a tablet the shell is a 440px strip
- * down the middle of a much wider page, and a full-width band of bar colour
- * under it would be a bar nobody asked for. `::after` is zero-height wherever
- * there is no inset, so a desktop sees neither. */
-.tabs::before {
-  content: '';
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 440px;
-  height: 50vh;
-  background: var(--card);
-  z-index: -1;
-  pointer-events: none;
-}
-
-.tabs::after {
-  content: '';
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 440px;
-  height: var(--safe-bottom);
-  background: var(--card);
-  pointer-events: none;
+  z-index: 20;
 }
 
 .tabs__item {
