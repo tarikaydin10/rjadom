@@ -306,6 +306,15 @@ schreibt, entscheidet das nur zwischen Handy und Tablet derselben Person.
 
 ---
 
+## Weiterlesen
+
+* **[CLAUDE.md](CLAUDE.md)** — Arbeitsanweisung für Claude Code und andere
+  Werkzeuge: Kommandos, Prüfrezept, Arbeitsregeln, iOS-Wissen.
+* **[docs/adr/](docs/adr/README.md)** — Entscheidungen mit den verworfenen
+  Alternativen. Wer etwas am Layout, am Sync oder an der Absicherung ändern
+  will, liest zuerst dort, was schon einmal versucht wurde.
+* **[docs/tech-debt.md](docs/tech-debt.md)** — was bekannt und offen ist.
+
 ## Fremde Bestandteile
 
 * [SunCalc](https://github.com/mourner/suncalc) — BSD-2-Clause
