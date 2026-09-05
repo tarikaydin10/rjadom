@@ -99,6 +99,30 @@ async function loadStore() {
   }
 }
 
+/**
+ * One-off, for the launch: the test answers go, the settings stay.
+ *
+ * Done here rather than by hand because nobody but this process may write the
+ * data directory — the deploy user cannot, and SSH is not always to hand. The
+ * marker in the store makes it run exactly once; every later start is a no-op.
+ * What is removed is written next to the file first, so nothing is gone for
+ * good. Delete this block once the log has shown it ran (docs/tech-debt.md).
+ */
+const LAUNCH_RESET = 'launch-2026-09-06';
+
+async function launchReset() {
+  if (store.launchReset === LAUNCH_RESET) return;
+  const days = Object.keys(store.days);
+  if (days.length > 0) {
+    await mkdir(DATA_DIR, { recursive: true });
+    await writeFile(join(DATA_DIR, `answers.before-${LAUNCH_RESET}.json`), JSON.stringify(store, null, 2), 'utf8');
+  }
+  store.days = {};
+  store.launchReset = LAUNCH_RESET;
+  await persist();
+  console.log(`launch reset: removed ${days.length} day(s)${days.length ? ': ' + days.join(', ') : ''}`);
+}
+
 /** Serialised, atomic writes: a crash mid-save must not truncate the file. */
 function persist() {
   writeChain = writeChain.then(async () => {
@@ -485,4 +509,5 @@ const server = createServer(async (req, res) => {
 });
 
 await loadStore();
+await launchReset();
 server.listen(PORT, HOST, () => console.log(`ryadom server on ${HOST}:${PORT}`));

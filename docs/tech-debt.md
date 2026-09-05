@@ -45,6 +45,18 @@ kamen und dort harmlos, aber unbegründet stehen:
 nicht auftritt. Die beiden anderen können bleiben, wenn der Kommentar ehrlich
 ist — er ist es.
 
+## TD-03a · `launchReset()` im Server — einmalig, danach löschen
+
+**Woher:** Livegang am 2026-09-06 ohne Serverzugang. Der Server leert beim
+ersten Start mit diesem Stand alle Tage, behält die Einstellungen, schreibt
+vorher `answers.before-launch-2026-09-06.json` daneben und merkt sich den
+Marker `launchReset` im Store. Jeder weitere Start ist ein No-op.
+**Was es riskiert:** Nichts mehr, sobald es einmal lief — aber der Block ist
+toter Code mit einem gefährlichen Namen.
+**Abbau:** Sobald der Serverlog `launch reset: removed …` gezeigt hat (oder
+`/api/days/2026-09-05` leer antwortet): Block und Aufruf entfernen. Der
+Marker in `answers.json` darf bleiben.
+
 ## TD-04 · Keine automatisierten Tests
 
 **Woher:** Projektgröße. Es gibt `tsc`, den Build und den Deploy-Health-Check
