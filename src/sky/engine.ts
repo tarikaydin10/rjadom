@@ -361,14 +361,14 @@ export function buildDay(dayStart: number): SkyDay {
         ? {
             primary: '#1E2029',
             secondary: '#33323C',
-            shadow: '0 0 8px rgba(255,255,255,0.5), 0 1px 2px rgba(255,255,255,0.8)',
+            shadow: '0 1px 2px rgba(255,252,244,0.65)',
             arc: 'rgba(36,31,27,0.30)',
             horizon: 'rgba(36,31,27,0.42)',
           }
         : {
             primary: '#FFF9EF',
             secondary: '#F2E3D0',
-            shadow: '0 0 8px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.8)',
+            shadow: '0 1px 3px rgba(20,16,28,0.6)',
             arc: 'rgba(246,224,190,0.34)',
             horizon: 'rgba(246,224,190,0.5)',
           },

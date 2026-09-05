@@ -137,10 +137,10 @@ textarea {
   top: calc(var(--safe-top) + 12px);
   left: 50%;
   transform: translateX(-50%);
-  width: 36px;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.15);
+  width: 32px;
+  height: 3px;
+  border-radius: 1.5px;
+  background: rgba(255, 255, 255, 0.1);
   pointer-events: none;
   z-index: 10;
 }
@@ -360,7 +360,13 @@ textarea {
    land — and it meets the paper below it in the same family of colour instead
    of crossing from cold to warm at the join. */
 .sky__ground {
-  display: none;
+  position: absolute;
+  top: var(--horizon);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(74, 56, 42, 0.26) 0%, rgba(74, 56, 42, 0.17) 46%, rgba(74, 56, 42, 0.1) 100%);
+  pointer-events: none;
 }
 
 /* The one edge that should be hard is the horizon. Where the band meets the
@@ -392,7 +398,7 @@ textarea {
    above it is left to the sun, the moon and the stars. */
 .sky__cities {
   position: absolute;
-  top: var(--safe-top);
+  top: var(--horizon);
   left: 0;
   right: 0;
   padding: 16px var(--gutter) 0;
@@ -471,20 +477,19 @@ textarea {
   cursor: pointer;
 }
 
-/* When the time is scrubbed, the "now" text becomes a prominent button */
+/* When the time is scrubbed, the "now" text becomes a prominent ghost button */
 button.status__now {
-  background: var(--terracotta);
-  color: var(--paper);
+  background: transparent;
+  color: var(--terracotta);
+  border: 1px solid var(--terracotta);
   border-radius: 999px;
-  padding: 8px 14px;
+  padding: 6px 14px;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(176, 86, 60, 0.25);
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 button.status__now:active {
   transform: scale(0.96);
-  box-shadow: 0 2px 6px rgba(176, 86, 60, 0.2);
 }
 
 /* ---------- content ---------- */
