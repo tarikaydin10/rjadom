@@ -9,10 +9,17 @@
          the layout viewport, and iOS does not reliably give that height back
          when the keyboard goes: the shell stayed short for the rest of the
          session and sat that far above the bottom edge, tab bar and all. The
-         default, resizes-visual, leaves the layout alone and pans over it. -->
+         default, resizes-visual, leaves the layout alone and pans over it.
+
+         shrink-to-fit=no: Safari darf die Seite nicht herauszoomen, nur weil
+         irgendein Element breiter layoutet als der Bildschirm. Der Zeitstreifen
+         tut das absichtlich (sechs Tage in einem Element, per transform
+         geschoben), und Safari hat deshalb die ganze App auf 85% verkleinert.
+         Die eigentliche Sperre ist `contain` auf .rail__track in styles.css;
+         das hier ist der Gürtel zum Hosenträger. -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, shrink-to-fit=no"
     />
     <meta name="theme-color" content="#241F1B" />
     <!-- A private page for two. It should not turn up in a search result. -->

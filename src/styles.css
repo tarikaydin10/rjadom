@@ -617,6 +617,14 @@ textarea {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  /* Der Streifen darin ist sechs Tage breit — rund 1500px auf einem 400px-Gerät.
+     overflow:hidden schneidet ihn zwar ab, aber Safari bemisst den Viewport am
+     *Layout*-Überlauf, nicht am gemalten Bild: es fand ein 1555px-Kind, zoomte
+     die ganze Seite auf 85% heraus, und nichts stimmte mehr — Rahmen um die
+     App, Safe-Area-Werte im falschen Koordinatenraum, wuchtige Tab-Leiste.
+     Containment nimmt den Streifen aus dieser Rechnung: was hier drin liegt,
+     ist für den Rest des Dokuments nicht existent. */
+  contain: layout paint;
   /* Horizontal here, vertical to the page — the same division the band makes. */
   touch-action: pan-y;
   cursor: grab;
