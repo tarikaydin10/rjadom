@@ -3,10 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <!-- Locked like an application, not a page: no pinch zoom, no double-tap zoom,
-         and the keyboard resizes the content instead of shoving the whole view up. -->
+         and drawn out into the corners the phone keeps for itself.
+
+         No interactive-widget=resizes-content. It asked the keyboard to shrink
+         the layout viewport, and iOS does not reliably give that height back
+         when the keyboard goes: the shell stayed short for the rest of the
+         session and sat that far above the bottom edge, tab bar and all. The
+         default, resizes-visual, leaves the layout alone and pans over it. -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#241F1B" />
     <!-- A private page for two. It should not turn up in a search result. -->
