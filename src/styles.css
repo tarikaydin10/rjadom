@@ -28,7 +28,7 @@
      Minimum, die Shell als den Streifen, in den kein Screen hineinschreiben
      darf. Vorher standen dort zwei handgepflegte Kopien, und genau ihr
      Auseinanderdriften ist der Abstand, der unter der Leiste sichtbar wurde. */
-  --tabbar-height: 56px;
+  --tabbar-height: 36px;
 
   /* --band-height and --horizon are deliberately absent here. They are the
      band's own geometry, they belong to sky/engine.ts, which draws the sun and
